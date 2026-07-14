@@ -2,13 +2,16 @@ version: '3.8'
 
 services:
   xiaoai-ha-bridge:
-    build: .
+    image: xiaoai-ha-bridge:local
     container_name: xiaoai-ha-bridge
     restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./config:/app/config
+      - xiaoai_config:/app/config
     environment:
       - TZ=Asia/Shanghai
       - PYTHONPATH=/app/src
@@ -17,3 +20,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+volumes:
+  xiaoai_config:
