@@ -6,6 +6,9 @@ def setup_logging(log_level: str = "INFO", log_file: str = "config/app.log"):
     logger = logging.getLogger("xiaoai_ha_bridge")
     logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
+    if getattr(logger, "_xiaoai_configured", False):
+        return logger
+
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
@@ -23,5 +26,7 @@ def setup_logging(log_level: str = "INFO", log_file: str = "config/app.log"):
     )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+    logger.propagate = False
+    logger._xiaoai_configured = True
 
     return logger

@@ -37,8 +37,7 @@ class CommandInterceptor:
         self.processing = True
 
         try:
-            await self._execute_command(parsed, source_speaker_entity_id)
-            return True
+            return await self._execute_command(parsed, source_speaker_entity_id)
         finally:
             self.processing = False
 
@@ -51,7 +50,7 @@ class CommandInterceptor:
             return self.config.xiaomi_speakers[0].entity_id
         return ""
 
-    async def _execute_command(self, parsed: Dict[str, Any], source_speaker_entity_id: str = None):
+    async def _execute_command(self, parsed: Dict[str, Any], source_speaker_entity_id: str = None) -> bool:
         entity_id = parsed["entity_id"]
         action = parsed["action"]
         temperature = parsed["temperature"]
@@ -68,22 +67,22 @@ class CommandInterceptor:
         tts_speaker = self._get_tts_speaker(source_speaker_entity_id)
 
         if is_query:
-            await self._handle_query(entity_id, device_name, device_type, tts_speaker, command_id)
-            return
+            return await self._handle_query(entity_id, device_name, device_type, tts_speaker, command_id)
 
         tts_messages = []
         self._last_notify_message = ""
 
+        command_succeeded = False
         if device_type == "climate":
-            tts_messages = await self._execute_climate(entity_id, action, temperature, mode, device_name)
+            tts_messages, command_succeeded = await self._execute_climate(entity_id, action, temperature, mode, device_name)
         elif device_type == "vacuum":
-            tts_messages = await self._execute_vacuum(entity_id, action, device_name, room, segment_id, clean_mode, repeats)
+            tts_messages, command_succeeded = await self._execute_vacuum(entity_id, action, device_name, room, segment_id, clean_mode, repeats)
         elif device_type in ("light", "switch", "fan"):
-            tts_messages = await self._execute_switch_light(entity_id, action, device_name, device_type)
+            tts_messages, command_succeeded = await self._execute_switch_light(entity_id, action, device_name, device_type)
         elif device_type in ("cover", "curtain"):
-            tts_messages = await self._execute_cover(entity_id, action, device_name)
+            tts_messages, command_succeeded = await self._execute_cover(entity_id, action, device_name)
         elif device_type in ("refrigerator", "dishwasher", "washing_machine", "dryer"):
-            tts_messages = await self._execute_appliance(entity_id, action, device_name, device_type, command_id)
+            tts_messages, command_succeeded = await self._execute_appliance(entity_id, action, device_name, device_type, command_id)
 
         if self.config.tts.enabled and tts_messages and tts_speaker:
             await self.ha_client.play_text(
@@ -100,30 +99,38 @@ class CommandInterceptor:
             except Exception as e:
                 logger.warning(f"发送手机通知失败: {e}")
 
+        return command_succeeded
+
     async def _execute_climate(self, entity_id: str, action: str, temperature: float, mode: str, device_name: str):
         messages = []
         notify_msg = ""
+        command_succeeded = False
 
         if action == "turn_on":
             success = await self.ha_client.turn_on_ac(entity_id)
             if success:
+                command_succeeded = True
                 if mode:
-                    await self.ha_client.set_ac_mode(entity_id, mode)
+                    mode_success = await self.ha_client.set_ac_mode(entity_id, mode)
+                    command_succeeded = command_succeeded and mode_success
                     mode_map_dict = {"cool": "制冷", "heat": "制热", "dry": "除湿", "auto": "自动", "fan_only": "送风"}
                     mode_text = mode_map_dict.get(mode, mode)
                     tts_msg = "好的，已为你打开{}，{}模式".format(device_name, mode_text)
                     notify_msg = "已经打开{}，模式{}".format(device_name, mode_text)
                     if temperature:
-                        await self.ha_client.set_ac_temperature(entity_id, temperature)
+                        temperature_success = await self.ha_client.set_ac_temperature(entity_id, temperature)
+                        command_succeeded = command_succeeded and temperature_success
                         tts_msg += "，温度{}度".format(int(temperature))
                         notify_msg += "，温度{}度".format(int(temperature))
-                    messages.append(tts_msg)
+                    messages.append(tts_msg if command_succeeded else "抱歉，{}设置失败了".format(device_name))
                 else:
-                    success = await self.ha_client.turn_on_ac(entity_id)
-                    if success:
+                    state = await self.ha_client.get_state(entity_id, quiet=True)
+                    if state and state.get("state") == "off":
+                        command_succeeded = False
+                        messages.append("已发送开启指令，但 HA 状态仍为关闭")
+                    else:
                         messages.append("好的，已为你打开{}".format(device_name))
                         notify_msg = "已经打开{}".format(device_name)
-                        state = await self.ha_client.get_state(entity_id)
                         if state:
                             attrs = state.get("attributes", {})
                             current_mode = attrs.get("hvac_mode", "")
@@ -140,6 +147,7 @@ class CommandInterceptor:
             if success:
                 messages.append("好的，已为你关闭{}".format(device_name))
                 notify_msg = "已经关闭{}".format(device_name)
+                command_succeeded = True
             else:
                 messages.append("抱歉，关闭{}失败了，请稍后再试".format(device_name))
 
@@ -169,9 +177,10 @@ class CommandInterceptor:
             if len(tts_parts) > 1:
                 messages.append("，".join(tts_parts))
                 notify_msg = "，".join(notify_parts)
+                command_succeeded = True
 
         self._last_notify_message = notify_msg
-        return messages
+        return messages, command_succeeded
 
     async def _execute_vacuum(self, entity_id: str, action: str, device_name: str, room: str = None, segment_id: int = None, clean_mode: str = None, repeats: int = 1):
         messages = []
@@ -274,7 +283,7 @@ class CommandInterceptor:
                 messages.append("抱歉，{}回充失败了".format(device_name))
 
         self._last_notify_message = notify_msg
-        return messages
+        return messages, bool(notify_msg)
 
     async def _execute_switch_light(self, entity_id: str, action: str, device_name: str, device_type: str):
         messages = []
@@ -297,7 +306,7 @@ class CommandInterceptor:
                 messages.append("抱歉，关闭{}失败了，请稍后再试".format(device_name))
 
         self._last_notify_message = notify_msg
-        return messages
+        return messages, bool(notify_msg)
 
     async def _execute_cover(self, entity_id: str, action: str, device_name: str):
         """执行窗帘/晾衣架等 cover 类设备指令"""
@@ -327,17 +336,19 @@ class CommandInterceptor:
                 messages.append("抱歉，停止{}失败了".format(device_name))
 
         self._last_notify_message = notify_msg
-        return messages
+        return messages, bool(notify_msg)
 
     async def _execute_appliance(self, entity_id: str, action: str, device_name: str, device_type: str, command_id: str = ""):
         messages = []
         notify_msg = ""
+        command_succeeded = False
 
         if action == "query":
             state = await self.ha_client.get_state(entity_id)
             if state:
                 response = await self._format_appliance_state(device_name, device_type, state.get("state", ""), state.get("attributes", {}), command_id)
                 messages.append(response)
+                command_succeeded = True
         elif action == "turn_on":
             # 洗衣机/烘干机：海尔用 select 域控制开关机，需要选"开机"
             if device_type in ("washing_machine", "dryer"):
@@ -363,9 +374,9 @@ class CommandInterceptor:
                 messages.append("抱歉，{}{}失败了".format("停止", device_name))
 
         self._last_notify_message = notify_msg
-        return messages
+        return messages, command_succeeded or bool(notify_msg)
 
-    async def _handle_query(self, entity_id: str, device_name: str, device_type: str, tts_speaker: str, command_id: str = ""):
+    async def _handle_query(self, entity_id: str, device_name: str, device_type: str, tts_speaker: str, command_id: str = "") -> bool:
         state = await self.ha_client.get_state(entity_id)
         if not state:
             if self.config.tts.enabled and tts_speaker:
@@ -373,7 +384,7 @@ class CommandInterceptor:
                     tts_speaker,
                     "无法获取{}的状态".format(device_name)
                 )
-            return
+            return False
 
         state_value = state.get("state", "")
         attributes = state.get("attributes", {})
@@ -389,6 +400,8 @@ class CommandInterceptor:
                 tts_speaker,
                 response_text
             )
+
+        return True
 
     def _format_state_response(self, device_name: str, device_type: str, state: str, attributes: Dict[str, Any]) -> str:
         if device_type == "vacuum":

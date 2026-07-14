@@ -249,7 +249,6 @@ async def discover_devices():
     entities = _load_demo_entities()
     if entities:
         try:
-            from ..ha_client.client import HomeAssistantClient
             class _DemoClient(HomeAssistantClient):
                 async def get_all_states(self):
                     return entities
@@ -458,7 +457,7 @@ async def execute_test_command(text: str = Body(..., embed=True)):
 
         return {
             "success": handled,
-            "message": "指令执行成功，已发送TTS播报和手机通知" if handled else "未匹配到指令或执行失败"
+            "message": "指令执行成功" if handled else "未匹配到指令或执行失败"
         }
     except Exception as e:
         import traceback
