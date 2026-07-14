@@ -673,13 +673,14 @@
                     container.innerHTML = '<p style="color:var(--warning);">未找到 xiaomi_miot 的 play_control 音箱，请确认该集成已安装并启用。</p>';
                     return;
                 }
-                container.innerHTML = '<p style="color:var(--success);margin-bottom:8px;">发现 ' + speakers.length + ' 个可用音箱，点击添加：</p>' +
+                container.innerHTML = '<p style="color:var(--success);margin-bottom:8px;">' + (d.demo ? '🎮 演示模式' : '发现') + ' ' + speakers.length + ' 个可用音箱，点击添加：</p>' +
                     speakers.map(sp => `
                         <div class="speaker-item" style="margin-bottom:6px;justify-content:flex-start;gap:10px;">
                             <span style="flex:1;"><code>${sp.entity_id}</code> <small style="color:var(--text-muted);">(${sp.name})</small></span>
                             <button class="btn btn-primary btn-sm" onclick="addSpeakerById('${sp.entity_id}')">添加</button>
                         </div>
-                    `).join('');
+                    `).join('') +
+                    (d.demo ? '<p style="color:var(--warning);font-size:12px;margin-top:8px;">⚠️ 演示模式：连接真实 HA 后将获取最新音箱列表</p>' : '');
                 showResult('speakerResult', 'success', '发现 ' + speakers.length + ' 个可用音箱');
             } catch (e) {
                 container.innerHTML = '<p style="color:var(--danger);">发现失败: ' + e.message + '</p>';
@@ -921,13 +922,13 @@
                 const r = await fetch('/api/discover/devices');
                 const d = await r.json();
                 if (!r.ok || !d.success) {
-                    status.textContent = '❌ 扫描失败: ' + (d.detail || '未知错误');
+                    status.innerHTML = '<span style="color:var(--danger);">❌ 扫描失败: ' + (d.detail || '未知错误') + '</span><br><span style="color:var(--text-muted);font-size:12px;">提示：先在「连接配置」Tab 中填写 HA 地址和 Token，并保存。</span>';
                     return;
                 }
                 discoveredData = d.categories || {};
-                status.textContent = '✅ 扫描完成！共发现 ' +
-                    Object.values(discoveredData).reduce((sum, c) => sum + (c.items ? c.items.length : 0), 0) +
-                    ' 个实体';
+                const count = Object.values(discoveredData).reduce((sum, c) => sum + (c.items ? c.items.length : 0), 0);
+                status.innerHTML = (d.live ? '✅ 已连接 HA，扫描完成！' : '✅ 演示模式（已断开 HA）:') + ' 共发现 ' + count + ' 个实体' +
+                    (d.message ? '<br><span style="color:var(--warning);font-size:12px;">⚠️ ' + d.message + '</span>' : '');
                 document.getElementById('discoveredSection').style.display = 'block';
                 renderDiscoveredCategories();
             } catch (e) {

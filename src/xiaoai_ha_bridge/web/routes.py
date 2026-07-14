@@ -9,6 +9,22 @@ from ..ha_client.client import HomeAssistantClient
 router = APIRouter()
 config_manager = ConfigManager()
 
+# Demo 数据路径（本地 HA 备份），用于离线预览
+def _load_demo_entities():
+    demo_paths = [
+        "/workspace/ha_optimizer/ha_backups/latest/entities.json",
+        "/workspace/ha_backups/entities.json",
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "ha_backups", "latest", "entities.json"),
+    ]
+    for p in demo_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+    return []
+
 _poller = None
 _interceptor = None
 
@@ -173,11 +189,32 @@ async def discover_xiaomi_miot_speakers():
 
     try:
         ha_client = HomeAssistantClient(config.home_assistant)
-        speakers = await ha_client.discover_xiaomi_miot_speakers()
+        connected = await ha_client.test_connection()
+        if connected:
+            speakers = await ha_client.discover_xiaomi_miot_speakers()
+            await ha_client.close()
+            return {"success": True, "speakers": speakers}
         await ha_client.close()
-        return {"success": True, "speakers": speakers}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="发现音箱失败: {}".format(str(e)))
+    except Exception:
+        pass
+
+    # Demo 模式：离线展示备份数据中的 xiaomi_miot 音箱
+    entities = _load_demo_entities()
+    all_states = {e.get("entity_id", ""): e for e in entities}
+    speakers = []
+    for entity in entities:
+        eid = entity.get("entity_id", "")
+        if not eid.startswith("media_player.xiaomi_lx06_") or not eid.endswith("_play_control"):
+            continue
+        suffix = eid.replace("media_player.", "")
+        conv_id = "sensor." + suffix.replace("_play_control", "_conversation")
+        if conv_id in all_states:
+            speakers.append({
+                "entity_id": eid,
+                "name": entity.get("attributes", {}).get("friendly_name", eid),
+                "conversation_sensor": conv_id
+            })
+    return {"success": True, "speakers": speakers, "demo": True, "message": "当前为演示模式，数据来自本地 HA 备份"}
 
 @router.get("/api/discover/devices")
 async def discover_devices():
@@ -187,13 +224,39 @@ async def discover_devices():
     except FileNotFoundError:
         raise HTTPException(status_code=400, detail="请先配置 Home Assistant 连接信息")
 
+    live = False
     try:
         ha_client = HomeAssistantClient(config.home_assistant)
-        devices = await ha_client.discover_devices_for_bridge()
+        if await ha_client.test_connection():
+            devices = await ha_client.discover_devices_for_bridge()
+            live = True
+        else:
+            devices = {}
         await ha_client.close()
-        return {"success": True, "categories": devices}
+    except Exception:
+        devices = {}
+
+    if live and devices:
+        return {"success": True, "categories": devices, "live": True}
+
+    # Demo 模式：使用本地 HA 备份数据
+    entities = _load_demo_entities()
+    if not entities:
+        raise HTTPException(status_code=400, detail="无法连接到 Home Assistant，且未找到本地演示数据")
+
+    # 直接调用 client 的静态分类逻辑：创建临时 client 处理
+    try:
+        from ..ha_client.client import HomeAssistantClient
+        class _DemoClient(HomeAssistantClient):
+            async def get_all_states(self):
+                return entities
+        demo_client = _DemoClient(config.home_assistant)
+        devices = await demo_client.discover_devices_for_bridge()
+        await demo_client.close()
     except Exception as e:
-        raise HTTPException(status_code=500, detail="发现设备失败: {}".format(str(e)))
+        raise HTTPException(status_code=500, detail="演示模式加载失败: {}".format(str(e)))
+
+    return {"success": True, "categories": devices, "live": False, "message": "当前为演示模式，数据来自本地 HA 备份"}
 
 @router.get("/api/discover/device-sensors")
 async def discover_device_sensors(entity_id: str):
