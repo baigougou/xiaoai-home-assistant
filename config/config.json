@@ -1,0 +1,171 @@
+{
+  "home_assistant": {
+    "url": "https://ha.catop.cf:14444",
+    "api_token": "YOUR_HA_LONG_LIVED_ACCESS_TOKEN_HERE"
+  },
+  "xiaomi_speakers": [
+    {
+      "entity_id": "media_player.xiaomi_lx06_dd28_play_control",
+      "execute_text_service": "xiaomi_miot.intelligent_speaker",
+      "play_text_service": "xiaomi_miot.intelligent_speaker"
+    },
+    {
+      "entity_id": "media_player.xiaomi_lx06_69fe_play_control",
+      "execute_text_service": "xiaomi_miot.intelligent_speaker",
+      "play_text_service": "xiaomi_miot.intelligent_speaker"
+    },
+    {
+      "entity_id": "media_player.xiaomi_lx06_174f_play_control",
+      "execute_text_service": "xiaomi_miot.intelligent_speaker",
+      "play_text_service": "xiaomi_miot.intelligent_speaker"
+    }
+  ],
+  "bridge": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "debug": false,
+    "log_level": "INFO",
+    "polling_interval": 3
+  },
+  "tts": {
+    "enabled": true,
+    "volume": 50,
+    "notify_services": [],
+    "notify_on_clean_complete": true
+  },
+  "commands": {
+    "gree_main_ac": {
+      "name": "主卧空调",
+      "entity_id": "climate.gree_climate",
+      "device_type": "climate",
+      "keywords": ["主卧空调", "卧室空调"]
+    },
+    "gree_kids_ac": {
+      "name": "小孩房空调",
+      "entity_id": "climate.gree_climate_2",
+      "device_type": "climate",
+      "keywords": ["小孩房空调", "儿童房空调"]
+    },
+    "living_ac": {
+      "name": "客厅空调",
+      "entity_id": "climate.lemesh_cn_2043596866_b27m",
+      "device_type": "climate",
+      "keywords": ["客厅空调", "大厅空调"]
+    },
+    "elder_ac": {
+      "name": "老人房空调",
+      "entity_id": "climate.210006737191564_thermostat",
+      "device_type": "climate",
+      "keywords": ["老人房空调", "长辈房空调"]
+    },
+    "study_ac": {
+      "name": "书房空调",
+      "entity_id": "climate.210006737186322_thermostat",
+      "device_type": "climate",
+      "keywords": ["书房空调"]
+    },
+    "master_bath_heater": {
+      "name": "主卧浴霸",
+      "entity_id": "climate.yeelink_cn_822085204_v13",
+      "device_type": "climate",
+      "keywords": ["主卧浴霸", "主卫浴霸", "主卧暖风机"]
+    },
+    "public_bath_heater": {
+      "name": "公卫浴霸",
+      "entity_id": "climate.yeelink_cn_822093474_v13",
+      "device_type": "climate",
+      "keywords": ["公卫浴霸", "客卫浴霸", "公卫暖风机"]
+    },
+    "vacuum_dreame": {
+      "name": "追觅S30",
+      "entity_id": "vacuum.zhui_mi_s30_bo_jin_ban",
+      "device_type": "vacuum",
+      "keywords": ["追觅", "扫地机", "扫地机器人", "S30"],
+      "default_clean_mode": "sweep_and_mop"
+    },
+    "living_main_light": {
+      "name": "客厅主灯",
+      "entity_id": "light.lemesh_cn_1101693473_wy0c09_s_2_2",
+      "device_type": "light",
+      "keywords": ["客厅主灯", "客厅灯", "大厅灯"]
+    },
+    "dining_light": {
+      "name": "餐厅灯",
+      "entity_id": "light.lemesh_cn_1116703024_wy0c15_s_2_light",
+      "device_type": "light",
+      "keywords": ["餐厅灯", "饭厅灯"]
+    },
+    "master_bed_light": {
+      "name": "主卧灯",
+      "entity_id": "light.lemesh_cn_944187535_wy0a22_s_2_light",
+      "device_type": "light",
+      "keywords": ["主卧灯", "卧室灯"]
+    },
+    "kids_room_light": {
+      "name": "小孩房灯",
+      "entity_id": "light.lemesh_cn_1119143543_wy0c15_s_2_light",
+      "device_type": "light",
+      "keywords": ["小孩房灯", "儿童房灯"]
+    },
+    "elder_room_light": {
+      "name": "老人房灯",
+      "entity_id": "light.lemesh_cn_1119141594_wy0c15_s_2_light",
+      "device_type": "light",
+      "keywords": ["老人房灯", "长辈房灯"]
+    },
+    "study_light": {
+      "name": "书房灯",
+      "entity_id": "light.lemesh_cn_1119142071_wy0c15_s_2_light",
+      "device_type": "light",
+      "keywords": ["书房灯"]
+    },
+    "corridor_light": {
+      "name": "走廊灯",
+      "entity_id": "light.lemesh_cn_1115875946_wy0c15_s_2_light",
+      "device_type": "light",
+      "keywords": ["走廊灯", "过道灯"]
+    },
+    "living_curtain": {
+      "name": "客厅窗帘",
+      "entity_id": "cover.dooya_cn_2002611066_dt98_s_2_curtain",
+      "device_type": "switch",
+      "keywords": ["客厅窗帘", "大厅窗帘"]
+    },
+    "master_curtain": {
+      "name": "主卧窗帘",
+      "entity_id": "cover.dooya_cn_2002453892_dt98_s_2_curtain",
+      "device_type": "switch",
+      "keywords": ["主卧窗帘", "主卧布帘", "卧室窗帘"]
+    },
+    "master_sheer_curtain": {
+      "name": "主卧纱帘",
+      "entity_id": "cover.dooya_cn_2002508023_dt98_s_2_curtain",
+      "device_type": "switch",
+      "keywords": ["主卧纱帘"]
+    },
+    "kids_curtain": {
+      "name": "小孩房窗帘",
+      "entity_id": "cover.dooya_cn_2001805496_dt98_s_2_curtain",
+      "device_type": "switch",
+      "keywords": ["小孩房窗帘", "儿童房窗帘"]
+    },
+    "elder_curtain": {
+      "name": "老人房窗帘",
+      "entity_id": "cover.dooya_cn_2022403134_dt98_s_2_curtain",
+      "device_type": "switch",
+      "keywords": ["老人房窗帘", "长辈房窗帘"]
+    },
+    "study_curtain": {
+      "name": "书房窗帘",
+      "entity_id": "cover.dooya_cn_2001805533_dt98_s_2_curtain",
+      "device_type": "switch",
+      "keywords": ["书房窗帘"]
+    },
+    "clothes_rack": {
+      "name": "晾衣架",
+      "entity_id": "cover.jns_cn_742251944_1_s_2_airer",
+      "device_type": "switch",
+      "keywords": ["晾衣架", "晾衣杆", "衣架"]
+    }
+  }
+}

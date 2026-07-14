@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  xiaoai-ha-bridge:
+    build: .
+    container_name: xiaoai-ha-bridge
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONPATH=/app/src
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
