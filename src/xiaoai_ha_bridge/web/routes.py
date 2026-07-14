@@ -163,6 +163,183 @@ async def discover_entities():
     except Exception as e:
         raise HTTPException(status_code=500, detail="发现实体失败: {}".format(str(e)))
 
+@router.get("/api/discover/speakers")
+async def discover_xiaomi_miot_speakers():
+    """发现支持语音捕获的 xiaomi_miot 音箱。"""
+    try:
+        config = config_manager.load()
+    except FileNotFoundError:
+        raise HTTPException(status_code=400, detail="请先配置 Home Assistant 连接信息")
+
+    try:
+        ha_client = HomeAssistantClient(config.home_assistant)
+        speakers = await ha_client.discover_xiaomi_miot_speakers()
+        await ha_client.close()
+        return {"success": True, "speakers": speakers}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="发现音箱失败: {}".format(str(e)))
+
+@router.get("/api/discover/devices")
+async def discover_devices():
+    """扫描 HA 所有设备，分类返回，标注米家原生 vs 需桥接。"""
+    try:
+        config = config_manager.load()
+    except FileNotFoundError:
+        raise HTTPException(status_code=400, detail="请先配置 Home Assistant 连接信息")
+
+    try:
+        ha_client = HomeAssistantClient(config.home_assistant)
+        devices = await ha_client.discover_devices_for_bridge()
+        await ha_client.close()
+        return {"success": True, "categories": devices}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="发现设备失败: {}".format(str(e)))
+
+@router.get("/api/discover/device-sensors")
+async def discover_device_sensors(entity_id: str):
+    """查找与某个设备相关的传感器（用于配置冰箱/洗衣机等）。"""
+    try:
+        config = config_manager.load()
+    except FileNotFoundError:
+        raise HTTPException(status_code=400, detail="请先配置 Home Assistant 连接信息")
+
+    try:
+        ha_client = HomeAssistantClient(config.home_assistant)
+        sensors = await ha_client.get_sensors_for_device(entity_id)
+        await ha_client.close()
+        return {"success": True, "sensors": sensors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="查找传感器失败: {}".format(str(e)))
+
+@router.get("/api/discover/vacuum-rooms")
+async def discover_vacuum_rooms(entity_id: str):
+    """获取扫地机器人房间列表（从 HA 实时读取）。"""
+    try:
+        config = config_manager.load()
+    except FileNotFoundError:
+        raise HTTPException(status_code=400, detail="请先配置 Home Assistant 连接信息")
+
+    try:
+        ha_client = HomeAssistantClient(config.home_assistant)
+        rooms = await ha_client.get_vacuum_rooms(entity_id)
+        await ha_client.close()
+        return {"success": True, "rooms": rooms}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="获取房间列表失败: {}".format(str(e)))
+
+# ========== 设备 CRUD ==========
+
+@router.post("/api/commands")
+async def add_device(data: Dict[str, Any] = Body(...)):
+    """添加一个设备到桥接配置。"""
+    try:
+        config = config_manager.load()
+        cmd_id = data.get("id", "")
+        if not cmd_id:
+            raise HTTPException(status_code=400, detail="缺少设备ID")
+        if cmd_id in config.commands:
+            raise HTTPException(status_code=400, detail="设备 {} 已存在".format(cmd_id))
+
+        # 构建 CommandConfig
+        from ..config.config import CommandConfig
+        cmd_data = {
+            "name": data.get("name", cmd_id),
+            "entity_id": data.get("entity_id", ""),
+            "device_type": data.get("device_type", "climate"),
+            "keywords": data.get("keywords", [data.get("name", cmd_id)]),
+        }
+
+        # 可选字段
+        for field in ["rooms", "default_clean_mode", "default_repeats",
+                       "fridge_sensors", "self_clean_entities", "appliance_sensors"]:
+            if field in data and data[field] is not None:
+                cmd_data[field] = data[field]
+
+        cmd = CommandConfig(**cmd_data)
+        config.commands[cmd_id] = cmd
+        config_manager.save(config)
+
+        if _interceptor:
+            _interceptor.update_config(config)
+
+        return {"success": True, "message": "设备 {} 添加成功".format(data.get("name", cmd_id))}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/api/commands/{cmd_id}")
+async def remove_device(cmd_id: str):
+    """从桥接配置中移除设备。"""
+    try:
+        config = config_manager.load()
+        if cmd_id not in config.commands:
+            raise HTTPException(status_code=404, detail="设备 {} 不存在".format(cmd_id))
+
+        del config.commands[cmd_id]
+        config_manager.save(config)
+
+        if _interceptor:
+            _interceptor.update_config(config)
+
+        return {"success": True, "message": "设备已移除"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/api/commands/{cmd_id}")
+async def update_device(cmd_id: str, data: Dict[str, Any] = Body(...)):
+    """更新设备配置（名称、关键词、房间、传感器等）。"""
+    try:
+        config = config_manager.load()
+        if cmd_id not in config.commands:
+            raise HTTPException(status_code=404, detail="设备 {} 不存在".format(cmd_id))
+
+        cmd = config.commands[cmd_id]
+
+        # 更新基础字段
+        for field in ["name", "entity_id", "device_type"]:
+            if field in data:
+                setattr(cmd, field, data[field])
+
+        if "keywords" in data:
+            cmd.keywords = data["keywords"]
+
+        # 更新嵌套配置
+        from ..config.config import VacuumRoomConfig, FridgeSensorsConfig, \
+            VacuumSelfCleanConfig, WasherDryerSensorsConfig
+
+        if "rooms" in data and data["rooms"]:
+            cmd.rooms = {k: VacuumRoomConfig(**v) for k, v in data["rooms"].items()}
+
+        if "fridge_sensors" in data and data["fridge_sensors"]:
+            cmd.fridge_sensors = FridgeSensorsConfig(**data["fridge_sensors"])
+
+        if "self_clean_entities" in data and data["self_clean_entities"]:
+            cmd.self_clean_entities = VacuumSelfCleanConfig(**data["self_clean_entities"])
+
+        if "appliance_sensors" in data and data["appliance_sensors"]:
+            cmd.appliance_sensors = WasherDryerSensorsConfig(**data["appliance_sensors"])
+
+        if "default_clean_mode" in data:
+            cmd.default_clean_mode = data["default_clean_mode"]
+        if "default_repeats" in data:
+            cmd.default_repeats = data["default_repeats"]
+
+        config_manager.save(config)
+
+        if _interceptor:
+            _interceptor.update_config(config)
+
+        return {"success": True, "message": "设备配置已更新"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.post("/api/discover/test")
 async def discover_with_config(config_data: Dict[str, Any] = Body(...)):
     try:

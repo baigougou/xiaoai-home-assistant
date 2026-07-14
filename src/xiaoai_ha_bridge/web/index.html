@@ -287,6 +287,70 @@
             .input-row { flex-direction: column; }
             .btn { width: 100%; justify-content: center; }
         }
+
+        /* Device Manager */
+        .dm-category { margin-bottom: 20px; }
+        .dm-cat-header {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 16px; font-weight: 600; margin-bottom: 10px;
+            padding: 8px 12px; background: rgba(255,255,255,0.03);
+            border-radius: 8px; cursor: pointer; user-select: none;
+        }
+        .dm-cat-header .count { font-size:12px; color:var(--text-muted); font-weight:400; }
+        .dm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .dm-table th { text-align: left; padding: 8px 12px; color: var(--text-muted); font-weight:600; font-size:12px; border-bottom: 1px solid var(--border); }
+        .dm-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+        .dm-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .dm-table tr.mi-native td { opacity: 0.5; }
+        .dm-table tr.mi-native.hidden { display: none; }
+        .dm-table code { font-size: 11px; color: var(--accent); background: rgba(59,130,246,0.1); padding: 2px 6px; border-radius: 4px; }
+        .dm-badge {
+            display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+        }
+        .dm-badge.mi { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .dm-badge.bridge { background: rgba(139,92,246,0.2); color: #a78bfa; }
+        .dm-checkbox { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+        /* Added device card */
+        .added-device {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 8px; margin-bottom: 8px; gap: 12px; flex-wrap: wrap;
+        }
+        .added-device .ad-info { flex: 1; min-width: 200px; }
+        .added-device .ad-name { font-weight: 600; font-size: 14px; }
+        .added-device .ad-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .added-device .ad-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 24px; max-width: 560px; width: 90%; max-height: 80vh; overflow-y: auto;
+        }
+        .modal h3 { font-size: 18px; margin-bottom: 16px; }
+        .modal .close-btn {
+            float: right; background: none; border: none; color: var(--text-muted);
+            font-size: 20px; cursor: pointer; line-height: 1;
+        }
+        .modal .close-btn:hover { color: var(--text); }
+        .tag-input-wrap {
+            display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px;
+            border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
+            min-height: 38px; align-items: center;
+        }
+        .tag-item {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 12px; padding: 2px 8px; background: rgba(59,130,246,0.2);
+            border-radius: 6px; color: #93c5fd;
+        }
+        .tag-item .tag-remove { cursor: pointer; font-weight: bold; margin-left: 2px; }
+        .tag-item .tag-remove:hover { color: var(--danger); }
+        .tag-input { border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; flex: 1; min-width: 80px; padding: 4px; }
     </style>
 </head>
 <body>
@@ -299,6 +363,7 @@
         <!-- Tab Nav -->
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('dashboard')">📊 仪表盘</button>
+            <button class="tab-btn" onclick="switchTab('devices')">📱 设备管理</button>
             <button class="tab-btn" onclick="switchTab('settings')">⚙️ 连接配置</button>
             <button class="tab-btn" onclick="switchTab('test')">🧪 指令测试</button>
         </div>
@@ -328,6 +393,40 @@
             </div>
         </div>
 
+        <!-- ==================== 设备管理 ==================== -->
+        <div class="tab-panel" id="tab-devices">
+            <!-- 操作栏 -->
+            <div class="form-section" style="padding:16px 24px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <h2 style="margin:0;">📱 设备管理</h2>
+                        <p class="desc" style="margin:4px 0 0;">从 HA 发现设备，勾选添加，配置名称和关键词</p>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-primary" onclick="scanDevices()">🔍 扫描 HA 设备</button>
+                        <button class="btn btn-secondary" onclick="toggleMiNative()" id="btnToggleMi">👁️ 显示米家设备</button>
+                    </div>
+                </div>
+                <div id="scanStatus" style="margin-top:8px;font-size:13px;color:var(--text-muted);"></div>
+            </div>
+
+            <!-- 已接入设备 -->
+            <div class="form-section">
+                <h2>✅ 已接入桥接的设备 <span style="font-size:13px;color:var(--text-muted);font-weight:400;" id="addedCount"></span></h2>
+                <div id="addedDevices" style="margin-top:12px;">
+                    <p style="color:var(--text-muted);font-size:13px;">正在加载...</p>
+                </div>
+            </div>
+
+            <!-- 发现设备 -->
+            <div class="form-section" id="discoveredSection" style="display:none;">
+                <h2>🔍 发现的设备</h2>
+                <p class="desc">从 HA 扫描到的设备，勾选后添加。<span style="color:var(--warning);">⚠️ 标注"米家原生"的设备小爱可直接控制，无需桥接。</span></p>
+                <div id="discoveredCategories"></div>
+                <div class="result-box" id="deviceActionResult"></div>
+            </div>
+        </div>
+
         <!-- ==================== 连接配置 ==================== -->
         <div class="tab-panel" id="tab-settings">
             <!-- HA 连接 -->
@@ -354,7 +453,7 @@
             <!-- 音箱配置 -->
             <div class="form-section">
                 <h2>🔊 小爱音箱</h2>
-                <p class="desc">配置要通过此桥接服务监听的小爱音箱。需要 xiaomi_miot 集成已安装。</p>
+                <p class="desc">配置要通过此桥接服务监听的小爱音箱。<strong>仅支持 xiaomi_miot 集成</strong>创建的音箱，Xiaomi Home 集成音箱无法捕获语音指令。</p>
                 <div class="form-group">
                     <label>添加音箱 Entity ID</label>
                     <div style="display:flex;gap:10px;">
@@ -362,6 +461,10 @@
                         <button class="btn btn-primary" onclick="addSpeaker()">添加</button>
                     </div>
                     <div class="hint">格式: media_player.xiaomi_lx06_xxxx_play_control</div>
+                </div>
+                <div class="form-group" style="margin-top:10px;">
+                    <button class="btn btn-secondary" onclick="discoverSpeakers()">🔍 发现可用音箱</button>
+                    <div id="discoveredSpeakers" style="margin-top:10px;"></div>
                 </div>
                 <ul class="speaker-list" id="speakerList">
                     <li class="speaker-item" style="color:var(--text-muted);">正在加载...</li>
@@ -397,6 +500,19 @@
             </div>
         </div>
 
+        <!-- Device Config Modal -->
+        <div class="modal-overlay" id="deviceModal">
+            <div class="modal">
+                <button class="close-btn" onclick="closeModal()">✕</button>
+                <h3 id="modalTitle">配置设备</h3>
+                <div id="modalBody"></div>
+                <div class="btn-group" style="margin-top:16px;">
+                    <button class="btn btn-primary" id="modalSaveBtn" onclick="saveDeviceConfig()">💾 保存</button>
+                    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                </div>
+            </div>
+        </div>
+
         <footer>
             <p>XiaoAI HA Bridge v0.2.3 · <a href="https://github.com/baigougou/xiaoai-home-assistant" target="_blank">GitHub</a></p>
         </footer>
@@ -409,6 +525,7 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + name).classList.add('active');
             event.target.classList.add('active');
+            if (name === 'devices') loadDeviceManager();
             if (name === 'settings') loadSettings();
             if (name === 'test') loadTestDevices();
         }
@@ -541,6 +658,50 @@
             showResult('speakerResult', 'info', '已移除（记得点下方保存全部配置）');
         }
 
+        async function discoverSpeakers() {
+            const container = document.getElementById('discoveredSpeakers');
+            container.innerHTML = '<p style="color:var(--text-muted);">正在发现可用音箱...</p>';
+            try {
+                const r = await fetch('/api/discover/speakers');
+                const d = await r.json();
+                if (!r.ok || !d.success) {
+                    container.innerHTML = '<p style="color:var(--danger);">发现失败: ' + (d.detail || '未知错误') + '</p>';
+                    return;
+                }
+                const speakers = d.speakers || [];
+                if (speakers.length === 0) {
+                    container.innerHTML = '<p style="color:var(--warning);">未找到 xiaomi_miot 的 play_control 音箱，请确认该集成已安装并启用。</p>';
+                    return;
+                }
+                container.innerHTML = '<p style="color:var(--success);margin-bottom:8px;">发现 ' + speakers.length + ' 个可用音箱，点击添加：</p>' +
+                    speakers.map(sp => `
+                        <div class="speaker-item" style="margin-bottom:6px;justify-content:flex-start;gap:10px;">
+                            <span style="flex:1;"><code>${sp.entity_id}</code> <small style="color:var(--text-muted);">(${sp.name})</small></span>
+                            <button class="btn btn-primary btn-sm" onclick="addSpeakerById('${sp.entity_id}')">添加</button>
+                        </div>
+                    `).join('');
+                showResult('speakerResult', 'success', '发现 ' + speakers.length + ' 个可用音箱');
+            } catch (e) {
+                container.innerHTML = '<p style="color:var(--danger);">发现失败: ' + e.message + '</p>';
+            }
+        }
+
+        function addSpeakerById(entityId) {
+            if (!configCache) configCache = { xiaomi_speakers: [] };
+            if (!configCache.xiaomi_speakers) configCache.xiaomi_speakers = [];
+            if (configCache.xiaomi_speakers.some(s => s.entity_id === entityId)) {
+                showResult('speakerResult', 'error', '该音箱已存在');
+                return;
+            }
+            configCache.xiaomi_speakers.push({
+                entity_id: entityId,
+                execute_text_service: 'xiaomi_miot.intelligent_speaker',
+                play_text_service: 'xiaomi_miot.intelligent_speaker'
+            });
+            renderSpeakerList(configCache.xiaomi_speakers);
+            showResult('speakerResult', 'success', '已添加 ' + entityId + '（记得点下方保存全部配置）');
+        }
+
         async function saveHAConfig() {
             const url = document.getElementById('haUrl').value.trim();
             const token = document.getElementById('haToken').value.trim();
@@ -668,6 +829,418 @@
             } catch (e) {
                 showResult('testResult', 'error', '❌ 请求失败: ' + e.message);
             }
+        }
+
+        // ========== Device Manager ==========
+        let discoveredData = {};
+        let showMiNative = false;
+        let editingDeviceId = null;
+        let editingDeviceData = null;
+        let addedDevicesCache = {};
+
+        async function loadDeviceManager() {
+            await loadAddedDevices();
+        }
+
+        async function loadAddedDevices() {
+            try {
+                const r = await fetch('/api/config');
+                const cfg = await r.json();
+                addedDevicesCache = cfg.commands || {};
+                renderAddedDevices();
+            } catch (e) {
+                document.getElementById('addedDevices').innerHTML = '<p style="color:var(--danger);">加载失败</p>';
+            }
+        }
+
+        function renderAddedDevices() {
+            const container = document.getElementById('addedDevices');
+            const icons = { climate: '🌡️', vacuum: '🤖', refrigerator: '🧊', washing_machine: '👕', dryer: '👔', light: '💡', switch: '🔌', fan: '🌀', cover: '🪟', curtain: '🪟' };
+            const labels = { climate: '空调', vacuum: '扫地机', refrigerator: '冰箱', washing_machine: '洗衣机', dryer: '烘干机', light: '灯光', switch: '开关', fan: '风扇', cover: '窗帘/晾衣架', curtain: '窗帘' };
+
+            const entries = Object.entries(addedDevicesCache);
+            document.getElementById('addedCount').textContent = '(' + entries.length + ' 个设备)';
+
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">暂无设备，请点击上方"扫描 HA 设备"添加</p>';
+                return;
+            }
+
+            container.innerHTML = entries.map(([id, dev]) => {
+                const t = dev.device_type || 'climate';
+                return `
+                <div class="added-device">
+                    <div class="ad-info">
+                        <span style="font-size:20px;margin-right:8px;">${icons[t] || '📦'}</span>
+                        <span class="ad-name">${dev.name}</span>
+                        <span class="ad-meta">
+                            <span class="dm-badge ${t === 'light' || t === 'cover' || t === 'fan' || t === 'curtain' ? 'mi' : 'bridge'}">${labels[t] || t}</span>
+                            <code>${dev.entity_id}</code>
+                            ${dev.keywords ? ' · 关键词: ' + dev.keywords.join(', ') : ''}
+                        </span>
+                    </div>
+                    <div class="ad-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editAddedDevice('${id}')">✏️ 编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="removeAddedDevice('${id}')">🗑 移除</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function editAddedDevice(id) {
+            const dev = addedDevicesCache[id];
+            if (!dev) return;
+            editingDeviceId = id;
+            editingDeviceData = JSON.parse(JSON.stringify(dev));
+            editingDeviceData.id = id;
+            openConfigModal(editingDeviceData);
+        }
+
+        async function removeAddedDevice(id) {
+            const dev = addedDevicesCache[id];
+            if (!confirm('确定要移除「' + (dev.name || id) + '」吗？此操作不可恢复。')) return;
+            try {
+                const r = await fetch('/api/commands/' + id, { method: 'DELETE' });
+                const d = await r.json();
+                if (r.ok) {
+                    showResult('deviceActionResult', 'success', '✅ ' + d.message);
+                    await loadAddedDevices();
+                    await loadDashboardDevices();
+                } else {
+                    showResult('deviceActionResult', 'error', '❌ ' + (d.detail || '移除失败'));
+                }
+            } catch (e) {
+                showResult('deviceActionResult', 'error', '❌ 请求失败: ' + e.message);
+            }
+        }
+
+        async function scanDevices() {
+            const status = document.getElementById('scanStatus');
+            status.textContent = '⏳ 正在扫描 HA 设备...';
+            try {
+                const r = await fetch('/api/discover/devices');
+                const d = await r.json();
+                if (!r.ok || !d.success) {
+                    status.textContent = '❌ 扫描失败: ' + (d.detail || '未知错误');
+                    return;
+                }
+                discoveredData = d.categories || {};
+                status.textContent = '✅ 扫描完成！共发现 ' +
+                    Object.values(discoveredData).reduce((sum, c) => sum + (c.items ? c.items.length : 0), 0) +
+                    ' 个实体';
+                document.getElementById('discoveredSection').style.display = 'block';
+                renderDiscoveredCategories();
+            } catch (e) {
+                status.textContent = '❌ 扫描失败: ' + e.message;
+            }
+        }
+
+        function renderDiscoveredCategories() {
+            const container = document.getElementById('discoveredCategories');
+            const icons = { climate: '🌡️', vacuum: '🤖', refrigerator: '🧊', washing_machine: '👕', dryer: '👔', light: '💡', switch: '🔌', fan: '🌀', cover: '🪟', water_heater: '🔥' };
+
+            let html = '';
+            for (const [catKey, cat] of Object.entries(discoveredData)) {
+                const items = cat.items || [];
+                if (items.length === 0) continue;
+                const bridgeCount = items.filter(i => i.needs_bridge).length;
+                const miCount = items.length - bridgeCount;
+
+                html += `<div class="dm-category">`;
+                html += `<div class="dm-cat-header" onclick="toggleCategory(this)">
+                    <span>${icons[catKey] || '📦'} ${cat.label}</span>
+                    <span class="count">${items.length} 个 (需桥接: ${bridgeCount}, 米家原生: ${miCount})</span>
+                    <span style="font-size:12px;margin-left:auto;">▼</span>
+                </div>`;
+                html += `<div class="dm-cat-body" style="display:block;">`;
+                html += `<table class="dm-table">
+                    <thead><tr><th style="width:40px;">添加</th><th>设备名称</th><th>Entity ID</th><th>来源</th></tr></thead>
+                    <tbody>`;
+
+                for (const item of items) {
+                    const alreadyAdded = Object.values(addedDevicesCache).some(d => d.entity_id === item.entity_id);
+                    const miClass = item.mi_native ? 'mi-native' + (showMiNative ? '' : ' hidden') : '';
+                    html += `<tr class="${miClass}">
+                        <td>${alreadyAdded
+                            ? '<span style="color:var(--success);">✅</span>'
+                            : '<input type="checkbox" class="dm-checkbox" data-eid="' + item.entity_id + '" data-name="' + escHtml(item.name) + '" data-domain="' + item.domain + '" data-mi="' + item.mi_native + '" onchange="onDeviceCheck(this)">'}
+                        </td>
+                        <td>${item.name}</td>
+                        <td><code>${item.entity_id}</code></td>
+                        <td><span class="dm-badge ${item.mi_native ? 'mi' : 'bridge'}">${item.mi_native ? '米家原生' : '需桥接'}</span></td>
+                    </tr>`;
+                }
+
+                html += `</tbody></table></div></div>`;
+            }
+
+            if (!html) {
+                html = '<p style="color:var(--text-muted);">未发现任何设备</p>';
+            }
+            container.innerHTML = html;
+        }
+
+        function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        function toggleCategory(header) {
+            const body = header.nextElementSibling;
+            const arrow = header.querySelector('span:last-child');
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                arrow.textContent = '▼';
+            } else {
+                body.style.display = 'none';
+                arrow.textContent = '▶';
+            }
+        }
+
+        function toggleMiNative() {
+            showMiNative = !showMiNative;
+            const btn = document.getElementById('btnToggleMi');
+            btn.textContent = showMiNative ? '🙈 隐藏米家设备' : '👁️ 显示米家设备';
+            document.querySelectorAll('.dm-table tr.mi-native').forEach(tr => {
+                tr.classList.toggle('hidden', !showMiNative);
+            });
+        }
+
+        function onDeviceCheck(cb) {
+            if (!cb.checked) return;
+            const eid = cb.dataset.eid;
+            const name = cb.dataset.name;
+            const domain = cb.dataset.domain;
+
+            // 推断 device_type
+            let dtype = domain;
+            if (domain === 'switch') {
+                // 根据名字推断是洗衣机/烘干机/冰箱/普通开关
+                if (name.includes('洗衣')) dtype = 'washing_machine';
+                else if (name.includes('烘干') || name.includes('干衣')) dtype = 'dryer';
+                else if (name.includes('冰箱') || name.includes('冷藏') || name.includes('冷冻')) dtype = 'refrigerator';
+                else if (name.includes('热水器') || name.includes('浴霸')) dtype = 'water_heater';
+            }
+
+            const devData = {
+                id: eid.replace(/\./g, '_').replace(/[^a-zA-Z0-9_]/g, '_'),
+                entity_id: eid,
+                name: name,
+                device_type: dtype,
+                keywords: [name],
+            };
+
+            editingDeviceId = null;
+            editingDeviceData = devData;
+            openConfigModal(devData);
+            cb.checked = false;
+        }
+
+        function openConfigModal(devData) {
+            document.getElementById('modalTitle').textContent = editingDeviceId ? '✏️ 编辑设备' : '➕ 添加设备';
+            const isEdit = !!editingDeviceId;
+            const d = devData;
+            const t = d.device_type || 'climate';
+
+            let extraFields = '';
+
+            // 通用：名称、Entity ID、类型、关键词
+            let typeOptions = '';
+            const types = [
+                ['climate', '🌡️ 空调'], ['vacuum', '🤖 扫地机'], ['refrigerator', '🧊 冰箱'],
+                ['washing_machine', '👕 洗衣机'], ['dryer', '👔 烘干机'],
+                ['light', '💡 灯光'], ['switch', '🔌 开关/插座'], ['cover', '🪟 窗帘/晾衣架'],
+                ['fan', '🌀 风扇'], ['water_heater', '🔥 热水器/浴霸']
+            ];
+            for (const [tv, tl] of types) {
+                typeOptions += `<option value="${tv}" ${t === tv ? 'selected' : ''}>${tl}</option>`;
+            }
+
+            let body = `
+            <div class="form-group">
+                <label>设备名称</label>
+                <input type="text" id="cfgName" value="${escHtml(d.name || '')}" placeholder="如：主卧空调" />
+            </div>
+            <div class="form-group">
+                <label>Entity ID</label>
+                <input type="text" id="cfgEid" value="${escHtml(d.entity_id || '')}" ${isEdit ? 'readonly style="opacity:0.6;"' : ''} />
+            </div>
+            <div class="form-group">
+                <label>设备类型</label>
+                <select id="cfgType">${typeOptions}</select>
+            </div>
+            <div class="form-group">
+                <label>触发关键词 <span class="hint">（按 Enter 添加，点击 × 删除）</span></label>
+                <div class="tag-input-wrap" id="keywordsWrap">
+                    <input type="text" class="tag-input" id="keywordInput" placeholder="输入关键词后按 Enter" onkeydown="addKeyword(event)" />
+                </div>
+            </div>`;
+
+            // 扫地机特殊字段
+            if (t === 'vacuum') {
+                body += `
+            <div class="form-group">
+                <label>默认清扫模式</label>
+                <select id="cfgCleanMode">
+                    <option value="sweep_and_mop" ${(d.default_clean_mode || 'sweep_and_mop') === 'sweep_and_mop' ? 'selected' : ''}>扫拖一体</option>
+                    <option value="sweep" ${d.default_clean_mode === 'sweep' ? 'selected' : ''}>仅扫地</option>
+                    <option value="mop" ${d.default_clean_mode === 'mop' ? 'selected' : ''}>仅拖地</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>默认清扫次数</label>
+                <input type="number" id="cfgRepeats" value="${d.default_repeats || 1}" min="1" max="3" style="width:80px;" />
+            </div>`;
+            }
+
+            // 冰箱传感器
+            if (t === 'refrigerator') {
+                const fs = d.fridge_sensors || {};
+                body += `<div class="form-group"><label style="color:var(--warning);">🧊 冰箱传感器配置</label></div>`;
+                const fridgeFields = [
+                    ['cfgFridgeTemp', '冷藏室温度', fs.refrigerator_temp || ''],
+                    ['cfgFreezerTemp', '冷冻室温度', fs.freezer_temp || ''],
+                    ['cfgFridgeTarget', '冷藏目标档位', fs.refrigerator_target || ''],
+                    ['cfgFreezerTarget', '冷冻目标档位', fs.freezer_target || ''],
+                    ['cfgQuickFreeze', '速冻开关', fs.quick_freezing || ''],
+                    ['cfgIntelMode', '智能存储开关', fs.intelligence_mode || ''],
+                    ['cfgVtRoom', '珍品变温', fs.vt_room || ''],
+                ];
+                for (const [id, label, val] of fridgeFields) {
+                    body += `<div class="form-group"><label>${label}</label><input type="text" id="${id}" value="${escHtml(val)}" placeholder="sensor.xxx" /></div>`;
+                }
+            }
+
+            // 洗衣机/烘干机传感器
+            if (t === 'washing_machine' || t === 'dryer') {
+                const as = d.appliance_sensors || {};
+                const appLabel = t === 'washing_machine' ? '👕 洗衣机' : '👔 烘干机';
+                body += `<div class="form-group"><label style="color:var(--warning);">${appLabel} 传感器配置</label></div>`;
+                const appFields = [
+                    ['cfgOnOff', '开关机状态', as.onoff_status || ''],
+                    ['cfgRunMode', '运行状态', as.running_mode || ''],
+                    ['cfgRemain', '剩余时间', as.remaining_time || ''],
+                    ['cfgProg', '当前程序', as.program || ''],
+                    ['cfgDoor', '门状态', as.door_status || ''],
+                ];
+                for (const [id, label, val] of appFields) {
+                    body += `<div class="form-group"><label>${label}</label><input type="text" id="${id}" value="${escHtml(val)}" placeholder="sensor.xxx" /></div>`;
+                }
+            }
+
+            document.getElementById('modalBody').innerHTML = body;
+            document.getElementById('deviceModal').classList.add('show');
+
+            // 渲染关键词标签
+            renderKeywords(d.keywords || []);
+        }
+
+        function renderKeywords(keywords) {
+            const wrap = document.getElementById('keywordsWrap');
+            // 清空旧标签，保留 input
+            wrap.querySelectorAll('.tag-item').forEach(el => el.remove());
+            const input = document.getElementById('keywordInput');
+            for (const kw of keywords) {
+                const tag = document.createElement('span');
+                tag.className = 'tag-item';
+                tag.innerHTML = kw + '<span class="tag-remove" onclick="this.parentElement.remove()">×</span>';
+                wrap.insertBefore(tag, input);
+            }
+        }
+
+        function addKeyword(event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            const input = document.getElementById('keywordInput');
+            const val = input.value.trim();
+            if (!val) return;
+            const wrap = document.getElementById('keywordsWrap');
+            const tag = document.createElement('span');
+            tag.className = 'tag-item';
+            tag.innerHTML = val + '<span class="tag-remove" onclick="this.parentElement.remove()">×</span>';
+            wrap.insertBefore(tag, input);
+            input.value = '';
+        }
+
+        function getKeywordsFromTags() {
+            const wrap = document.getElementById('keywordsWrap');
+            const tags = wrap.querySelectorAll('.tag-item');
+            return Array.from(tags).map(t => t.textContent.replace('×', '').trim());
+        }
+
+        async function saveDeviceConfig() {
+            const name = document.getElementById('cfgName').value.trim();
+            const entityId = document.getElementById('cfgEid').value.trim();
+            const deviceType = document.getElementById('cfgType').value;
+            const keywords = getKeywordsFromTags();
+
+            if (!name) { alert('请输入设备名称'); return; }
+            if (!entityId) { alert('请输入 Entity ID'); return; }
+            if (keywords.length === 0) { keywords.push(name); }
+
+            const data = {
+                name, entity_id: entityId, device_type: deviceType, keywords
+            };
+
+            // 扫地机
+            if (deviceType === 'vacuum') {
+                data.default_clean_mode = document.getElementById('cfgCleanMode')?.value || 'sweep_and_mop';
+                data.default_repeats = parseInt(document.getElementById('cfgRepeats')?.value || '1');
+            }
+
+            // 冰箱
+            if (deviceType === 'refrigerator') {
+                data.fridge_sensors = {
+                    refrigerator_temp: document.getElementById('cfgFridgeTemp')?.value || '',
+                    freezer_temp: document.getElementById('cfgFreezerTemp')?.value || '',
+                    refrigerator_target: document.getElementById('cfgFridgeTarget')?.value || '',
+                    freezer_target: document.getElementById('cfgFreezerTarget')?.value || '',
+                    quick_freezing: document.getElementById('cfgQuickFreeze')?.value || '',
+                    intelligence_mode: document.getElementById('cfgIntelMode')?.value || '',
+                    vt_room: document.getElementById('cfgVtRoom')?.value || '',
+                };
+            }
+
+            // 洗衣机/烘干机
+            if (deviceType === 'washing_machine' || deviceType === 'dryer') {
+                data.appliance_sensors = {
+                    onoff_status: document.getElementById('cfgOnOff')?.value || '',
+                    running_mode: document.getElementById('cfgRunMode')?.value || '',
+                    remaining_time: document.getElementById('cfgRemain')?.value || '',
+                    program: document.getElementById('cfgProg')?.value || '',
+                    door_status: document.getElementById('cfgDoor')?.value || '',
+                };
+            }
+
+            try {
+                let r;
+                if (editingDeviceId) {
+                    r = await fetch('/api/commands/' + editingDeviceId, {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    data.id = entityId.replace(/\./g, '_').replace(/[^a-zA-Z0-9_]/g, '_');
+                    r = await fetch('/api/commands', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                const d = await r.json();
+                if (r.ok) {
+                    showResult('deviceActionResult', 'success', '✅ ' + d.message);
+                    closeModal();
+                    await loadAddedDevices();
+                    await loadDashboardDevices();
+                } else {
+                    alert('保存失败: ' + (d.detail || '未知错误'));
+                }
+            } catch (e) {
+                alert('请求失败: ' + e.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('deviceModal').classList.remove('show');
+            editingDeviceId = null;
+            editingDeviceData = null;
         }
 
         // ========== Init ==========

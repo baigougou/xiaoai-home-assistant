@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from typing import Optional, Callable, Dict
+from typing import Optional, Callable, Dict, Set, List
 from ..config.config import AppConfig
 from ..ha_client.client import HomeAssistantClient
 
@@ -24,6 +24,7 @@ class SpeakerPoller:
         self.retry_count = 0
         self.max_retries = 3
         self.poll_count = 0
+        self.warned_speakers: Set[str] = set()
 
     def update_config(self, config: AppConfig):
         self.config = config
@@ -69,7 +70,7 @@ class SpeakerPoller:
 
     async def _poll_speaker(self, entity_id: str):
         """轮询音箱对话内容。
-        
+
         优先通过 xiaomi_miot 的 XiaoaiConversationSensor 读取，
         该 sensor 的 state 就是用户对话文本。
         conversation sensor 命名规则:
@@ -79,16 +80,21 @@ class SpeakerPoller:
         text = ""
 
         # 方案1: 通过 conversation sensor 读取（xiaomi_miot 集成）
-        conv_entity_id = entity_id.replace("media_player.", "sensor.").replace("_play_control", "_conversation")
-        conv_state = await self.ha_client.get_state(conv_entity_id)
-        if conv_state and conv_state.get("state"):
-            text = str(conv_state["state"]).strip()
-            if text:
-                logger.debug("[{}] 从 conversation sensor 读取: {}".format(entity_id, text))
+        # 尝试多种可能的 sensor 命名格式
+        conv_entity_ids = self._guess_conversation_sensors(entity_id)
+        for conv_entity_id in conv_entity_ids:
+            conv_state = await self.ha_client.get_state(conv_entity_id, quiet=True)
+            if conv_state and conv_state.get("state"):
+                candidate = str(conv_state["state"]).strip()
+                if candidate:
+                    text = candidate
+                    logger.debug("[{}] 从 conversation sensor [{}] 读取: {}".format(
+                        entity_id, conv_entity_id, text))
+                    break
 
         # 方案2: 回退 - 从 media_player 属性读取
         if not text:
-            state = await self.ha_client.get_state(entity_id)
+            state = await self.ha_client.get_state(entity_id, quiet=False)
             if not state:
                 return
             attributes = state.get("attributes", {})
@@ -116,3 +122,24 @@ class SpeakerPoller:
                 logger.info("指令已处理: {} (来自{})".format(text, entity_id))
             else:
                 logger.debug("指令未匹配: {}".format(text))
+
+    def _guess_conversation_sensors(self, entity_id: str) -> list:
+        """根据 media_player entity_id 猜测可能的 conversation sensor id。"""
+        candidates = []
+        suffix = entity_id.replace("media_player.", "")
+
+        # 标准 xiaomi_miot play_control -> conversation
+        if suffix.endswith("_play_control"):
+            candidates.append("sensor." + suffix.replace("_play_control", "_conversation"))
+        else:
+            # Xiaomi Home 格式: xiaomi_cn_xxxxxxxx_lx06 / xiao_ai_yin_xiang_xxxx
+            # 尝试通过 friendly 名称对应到 xiaomi_miot 的 play_control 版本不现实，
+            # 这里只给出常见的 conversation sensor 命名尝试。
+            candidates.append("sensor." + suffix + "_conversation")
+            # 尝试 device_id 对应格式
+            if suffix.startswith("xiaomi_cn_") and "_lx06" in suffix:
+                # 从 xiaomi_cn_862688817_lx06 尝试 xiaomi_lx06_... 的 conversation sensor，
+                # 但 MAC 和 xiaomi_miot 编号不一致，无法直接推导，只能全局匹配。
+                pass
+
+        return candidates
