@@ -266,20 +266,6 @@ async def discover_devices():
         detail=last_error or "无法获取设备列表，请检查 HA 连接"
     )
 
-    # 直接调用 client 的静态分类逻辑：创建临时 client 处理
-    try:
-        from ..ha_client.client import HomeAssistantClient
-        class _DemoClient(HomeAssistantClient):
-            async def get_all_states(self):
-                return entities
-        demo_client = _DemoClient(config.home_assistant)
-        devices = await demo_client.discover_devices_for_bridge()
-        await demo_client.close()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="演示模式加载失败: {}".format(str(e)))
-
-    return {"success": True, "categories": devices, "live": False, "message": "当前为演示模式，数据来自本地 HA 备份"}
-
 @router.get("/api/discover/device-sensors")
 async def discover_device_sensors(entity_id: str):
     """查找与某个设备相关的传感器（用于配置冰箱/洗衣机等）。"""
