@@ -13,7 +13,7 @@ class HomeAssistantClient:
             "Authorization": "Bearer {}".format(self.api_token),
             "Content-Type": "application/json"
         }
-        self.client = httpx.AsyncClient(timeout=30.0)
+        self.client = httpx.AsyncClient(timeout=60.0)
 
     async def close(self):
         await self.client.aclose()

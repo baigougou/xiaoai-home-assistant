@@ -224,7 +224,11 @@ async def discover_devices():
     except FileNotFoundError:
         raise HTTPException(status_code=400, detail="请先配置 Home Assistant 连接信息")
 
+    if not config.home_assistant.url or not config.home_assistant.api_token:
+        raise HTTPException(status_code=400, detail="请先在「连接配置」Tab 中保存 HA 地址和 Token")
+
     live = False
+    last_error = None
     try:
         ha_client = HomeAssistantClient(config.home_assistant)
         if await ha_client.test_connection():
@@ -232,17 +236,35 @@ async def discover_devices():
             live = True
         else:
             devices = {}
+            last_error = "HA 连接测试失败，请检查地址和 Token"
         await ha_client.close()
-    except Exception:
+    except Exception as e:
         devices = {}
+        last_error = "HA 请求失败: {}".format(str(e))
 
     if live and devices:
         return {"success": True, "categories": devices, "live": True}
 
-    # Demo 模式：使用本地 HA 备份数据
+    # Demo 模式：使用本地 HA 备份数据（仅开发环境可用）
     entities = _load_demo_entities()
-    if not entities:
-        raise HTTPException(status_code=400, detail="无法连接到 Home Assistant，且未找到本地演示数据")
+    if entities:
+        try:
+            from ..ha_client.client import HomeAssistantClient
+            class _DemoClient(HomeAssistantClient):
+                async def get_all_states(self):
+                    return entities
+            demo_client = _DemoClient(config.home_assistant)
+            devices = await demo_client.discover_devices_for_bridge()
+            await demo_client.close()
+            return {"success": True, "categories": devices, "live": False, "message": "当前为演示模式，数据来自本地 HA 备份"}
+        except Exception as e:
+            pass
+
+    # 都没有数据，返回明确错误
+    raise HTTPException(
+        status_code=400,
+        detail=last_error or "无法获取设备列表，请检查 HA 连接"
+    )
 
     # 直接调用 client 的静态分类逻辑：创建临时 client 处理
     try:
