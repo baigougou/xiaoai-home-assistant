@@ -1,0 +1,255 @@
+{
+  "home_assistant": {
+    "url": "https://your-ha-instance:8123",
+    "api_token": "YOUR_HA_LONG_LIVED_ACCESS_TOKEN_HERE"
+  },
+  "xiaomi_speakers": [
+    {
+      "entity_id": "media_player.xiaomi_lx06_dd28_play_control",
+      "execute_text_service": "xiaomi_miot.intelligent_speaker",
+      "play_text_service": "xiaomi_miot.intelligent_speaker"
+    },
+    {
+      "entity_id": "media_player.xiaomi_lx06_69fe_play_control",
+      "execute_text_service": "xiaomi_miot.intelligent_speaker",
+      "play_text_service": "xiaomi_miot.intelligent_speaker"
+    },
+    {
+      "entity_id": "media_player.xiaomi_lx06_174f_play_control",
+      "execute_text_service": "xiaomi_miot.intelligent_speaker",
+      "play_text_service": "xiaomi_miot.intelligent_speaker"
+    }
+  ],
+  "bridge": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "debug": false,
+    "log_level": "INFO",
+    "polling_interval": 3
+  },
+  "commands": {
+    "gree_main_ac": {
+      "name": "主卧空调",
+      "entity_id": "climate.gree_climate",
+      "device_type": "climate",
+      "keywords": [
+        "主卧空调",
+        "卧室空调"
+      ],
+      "rooms": {},
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": null,
+      "self_clean_entities": null,
+      "appliance_sensors": null
+    },
+    "gree_kids_ac": {
+      "name": "小孩房空调",
+      "entity_id": "climate.gree_climate_2",
+      "device_type": "climate",
+      "keywords": [
+        "小孩房空调",
+        "儿童房空调"
+      ],
+      "rooms": {},
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": null,
+      "self_clean_entities": null,
+      "appliance_sensors": null
+    },
+    "elder_ac": {
+      "name": "老人房空调",
+      "entity_id": "climate.210006737191564_thermostat",
+      "device_type": "climate",
+      "keywords": [
+        "老人房空调",
+        "长辈房空调"
+      ],
+      "rooms": {},
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": null,
+      "self_clean_entities": null,
+      "appliance_sensors": null
+    },
+    "study_ac": {
+      "name": "书房空调",
+      "entity_id": "climate.210006737186322_thermostat",
+      "device_type": "climate",
+      "keywords": [
+        "书房空调"
+      ],
+      "rooms": {},
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": null,
+      "self_clean_entities": null,
+      "appliance_sensors": null
+    },
+    "vacuum_dreame": {
+      "name": "追觅S30",
+      "entity_id": "vacuum.zhui_mi_s30_bo_jin_ban",
+      "device_type": "vacuum",
+      "keywords": [
+        "追觅",
+        "扫地机",
+        "扫地机器人",
+        "S30"
+      ],
+      "rooms": {
+        "living_room": {
+          "name": "客厅",
+          "segment_id": 7,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "dining_hall": {
+          "name": "餐厅",
+          "segment_id": 13,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "kitchen": {
+          "name": "厨房",
+          "segment_id": 9,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "master_bedroom": {
+          "name": "主卧",
+          "segment_id": 2,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "kids_bedroom": {
+          "name": "小孩房",
+          "segment_id": 3,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "elder_bedroom": {
+          "name": "老人房",
+          "segment_id": 8,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "study": {
+          "name": "书房",
+          "segment_id": 11,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "balcony": {
+          "name": "阳台",
+          "segment_id": 1,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "bathroom": {
+          "name": "主卫",
+          "segment_id": 4,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "bathroom2": {
+          "name": "公卫",
+          "segment_id": 10,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "corridor": {
+          "name": "走廊",
+          "segment_id": 6,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        },
+        "corridor2": {
+          "name": "过道",
+          "segment_id": 5,
+          "clean_mode": "sweep_and_mop",
+          "repeats": 1
+        }
+      },
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": null,
+      "self_clean_entities": {
+        "smart_mop_washing": "switch.zhui_mi_s30_bo_jin_ban_smart_mop_washing",
+        "manual_drying": "button.zhui_mi_s30_bo_jin_ban_manual_drying",
+        "drying_time": "select.zhui_mi_s30_bo_jin_ban_drying_time",
+        "self_wash_status": "sensor.zhui_mi_s30_bo_jin_ban_self_wash_base_status"
+      },
+      "appliance_sensors": null
+    },
+    "refrigerator": {
+      "name": "冰箱",
+      "entity_id": "sensor.60b02b38dac0_refrigeratortemperaturec",
+      "device_type": "refrigerator",
+      "keywords": [
+        "冰箱"
+      ],
+      "rooms": {},
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": {
+        "refrigerator_temp": "sensor.60b02b38dac0_refrigeratortemperaturec",
+        "freezer_temp": "sensor.60b02b38dac0_freezertemperaturec",
+        "refrigerator_target": "sensor.60b02b38dac0_refrigeratortargettemplevel",
+        "freezer_target": "sensor.60b02b38dac0_freezertargettemplevel",
+        "quick_freezing": "switch.60b02b38dac0_quickfreezingmode",
+        "intelligence_mode": "switch.60b02b38dac0_intelligencemode",
+        "vt_room": "select.60b02b38dac0_vtroom2targettemplevel"
+      },
+      "self_clean_entities": null,
+      "appliance_sensors": null
+    },
+    "washer_haier": {
+      "name": "洗衣机",
+      "entity_id": "switch.5c241f436d60_onoffstatus",
+      "device_type": "washing_machine",
+      "keywords": [
+        "洗衣机"
+      ],
+      "rooms": {},
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": null,
+      "self_clean_entities": null,
+      "appliance_sensors": {
+        "onoff_status": "select.5c241f436d60_onoffstatus",
+        "running_mode": "sensor.5c241f436d60_runningmode",
+        "remaining_time": "sensor.5c241f436d60_remainingmainwashtime",
+        "program": "sensor.5c241f436d60_washprog",
+        "door_status": "binary_sensor.5c241f436d60_doorstatus"
+      }
+    },
+    "dryer_haier": {
+      "name": "烘干机",
+      "entity_id": "switch.540853d24b65_onoffstatus",
+      "device_type": "dryer",
+      "keywords": [
+        "烘干机",
+        "干衣机"
+      ],
+      "rooms": {},
+      "default_clean_mode": "sweep_and_mop",
+      "default_repeats": 1,
+      "fridge_sensors": null,
+      "self_clean_entities": null,
+      "appliance_sensors": {
+        "onoff_status": "switch.540853d24b65_onoffstatus",
+        "running_mode": "sensor.540853d24b65_cyclephase",
+        "remaining_time": "sensor.540853d24b65_remainingdrytime",
+        "program": "select.540853d24b65_drycycle",
+        "door_status": "binary_sensor.540853d24b65_doorswitchstatus"
+      }
+    }
+  },
+  "tts": {
+    "enabled": true,
+    "volume": 50,
+    "notify_services": [],
+    "notify_on_clean_complete": true
+  }
+}

@@ -135,6 +135,27 @@ class HomeAssistantClient:
             "params": params
         })
 
+    async def vacuum_self_clean(self, entity_id: str) -> bool:
+        """触发基站自清洁（洗拖布）"""
+        return await self.call_service("switch", "turn_on", entity_id)
+
+    async def vacuum_start_drying(self, entity_id: str) -> bool:
+        """触发拖布烘干"""
+        return await self.call_service("button", "press", entity_id)
+
+    async def generic_turn_on_select(self, entity_id: str, option: str = None) -> bool:
+        """通过 select 域控制设备开关（海尔洗衣机/烘干机用 select 控制开关机）"""
+        data = {}
+        if option:
+            data["option"] = option
+        # 尝试 switch.turn_on，如果失败则尝试 select.select_option
+        result = await self.call_service("switch", "turn_on", entity_id)
+        if not result:
+            # 海尔设备可能用 select 域控制开关
+            if option:
+                result = await self.call_service("select", "select_option", entity_id, {"option": option})
+        return result
+
     async def get_vacuum_rooms(self, entity_id: str) -> List[Dict[str, Any]]:
         rooms = []
         seen_ids = set()

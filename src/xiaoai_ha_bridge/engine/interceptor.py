@@ -59,6 +59,7 @@ class CommandInterceptor:
         is_query = parsed["query"]
         device_name = parsed["name"]
         device_type = parsed["device_type"]
+        command_id = parsed.get("command_id", "")
         room = parsed.get("room")
         segment_id = parsed.get("segment_id")
         clean_mode = parsed.get("clean_mode")
@@ -67,7 +68,7 @@ class CommandInterceptor:
         tts_speaker = self._get_tts_speaker(source_speaker_entity_id)
 
         if is_query:
-            await self._handle_query(entity_id, device_name, device_type, tts_speaker)
+            await self._handle_query(entity_id, device_name, device_type, tts_speaker, command_id)
             return
 
         tts_messages = []
@@ -82,7 +83,7 @@ class CommandInterceptor:
         elif device_type in ("cover", "curtain"):
             tts_messages = await self._execute_cover(entity_id, action, device_name)
         elif device_type in ("refrigerator", "dishwasher", "washing_machine", "dryer"):
-            tts_messages = await self._execute_appliance(entity_id, action, device_name, device_type)
+            tts_messages = await self._execute_appliance(entity_id, action, device_name, device_type, command_id)
 
         if self.config.tts.enabled and tts_messages and tts_speaker:
             await self.ha_client.play_text(
@@ -124,15 +125,15 @@ class CommandInterceptor:
                         notify_msg = "已经打开{}".format(device_name)
                         state = await self.ha_client.get_state(entity_id)
                         if state:
-                        attrs = state.get("attributes", {})
-                        current_mode = attrs.get("hvac_mode", "")
-                        current_temp = attrs.get("temperature")
-                        mode_map_dict = {"cool": "制冷", "heat": "制热", "dry": "除湿", "auto": "自动", "fan_only": "送风"}
-                        if current_mode and current_mode != "off":
-                            mode_text = mode_map_dict.get(current_mode, current_mode)
-                            notify_msg += "，模式{}".format(mode_text)
-                        if current_temp:
-                            notify_msg += "，温度{}度".format(current_temp)
+                            attrs = state.get("attributes", {})
+                            current_mode = attrs.get("hvac_mode", "")
+                            current_temp = attrs.get("temperature")
+                            mode_map_dict = {"cool": "制冷", "heat": "制热", "dry": "除湿", "auto": "自动", "fan_only": "送风"}
+                            if current_mode and current_mode != "off":
+                                mode_text = mode_map_dict.get(current_mode, current_mode)
+                                notify_msg += "，模式{}".format(mode_text)
+                            if current_temp:
+                                notify_msg += "，温度{}度".format(current_temp)
 
         elif action == "turn_off":
             success = await self.ha_client.turn_off_ac(entity_id)
@@ -182,7 +183,36 @@ class CommandInterceptor:
             "mop": "仅拖地",
         }
 
-        if action == "clean_segment" and segment_id is not None:
+        if action == "self_clean":
+            # 基站自清洁（洗拖布）
+            # 查找 self_clean_entities 配置
+            clean_entity_id = entity_id  # fallback
+            for cmd_id, cmd in self.config.commands.items():
+                if cmd.entity_id == entity_id and getattr(cmd, 'self_clean_entities', None):
+                    clean_entity_id = cmd.self_clean_entities.smart_mop_washing
+                    break
+            success = await self.ha_client.vacuum_self_clean(clean_entity_id)
+            if success:
+                messages.append("好的，{}开始洗拖布".format(device_name))
+                notify_msg = "{}基站自清洁已启动".format(device_name)
+            else:
+                messages.append("抱歉，{}自清洁启动失败了".format(device_name))
+
+        elif action == "start_drying":
+            # 烘干拖布
+            dry_entity_id = entity_id
+            for cmd_id, cmd in self.config.commands.items():
+                if cmd.entity_id == entity_id and getattr(cmd, 'self_clean_entities', None):
+                    dry_entity_id = cmd.self_clean_entities.manual_drying
+                    break
+            success = await self.ha_client.vacuum_start_drying(dry_entity_id)
+            if success:
+                messages.append("好的，{}开始烘干拖布".format(device_name))
+                notify_msg = "{}拖布烘干已启动".format(device_name)
+            else:
+                messages.append("抱歉，{}烘干启动失败了".format(device_name))
+
+        elif action == "clean_segment" and segment_id is not None:
             success = await self.ha_client.vacuum_clean_segment(
                 entity_id,
                 segment_ids=[segment_id],
@@ -202,6 +232,8 @@ class CommandInterceptor:
                     "task_desc": task_desc,
                     "start_time": time.time()
                 }
+            else:
+                messages.append("抱歉，{}启动{}失败了".format(device_name, task_desc if 'task_desc' in dir() else "清扫"))
         elif action == "start":
             success = await self.ha_client.vacuum_start(entity_id)
             if success:
@@ -215,6 +247,8 @@ class CommandInterceptor:
                     "task_desc": task_desc,
                     "start_time": time.time()
                 }
+            else:
+                messages.append("抱歉，{}启动失败了".format(device_name))
         elif action == "stop":
             success = await self.ha_client.vacuum_stop(entity_id)
             if success:
@@ -222,16 +256,22 @@ class CommandInterceptor:
                 notify_msg = "{}已停止".format(device_name)
                 if entity_id in self.active_cleaning_tasks:
                     del self.active_cleaning_tasks[entity_id]
+            else:
+                messages.append("抱歉，停止{}失败了".format(device_name))
         elif action == "pause":
             success = await self.ha_client.vacuum_pause(entity_id)
             if success:
                 messages.append("好的，{}已暂停".format(device_name))
                 notify_msg = "{}已暂停".format(device_name)
+            else:
+                messages.append("抱歉，暂停{}失败了".format(device_name))
         elif action == "return_to_base":
             success = await self.ha_client.vacuum_return_to_base(entity_id)
             if success:
                 messages.append("好的，{}开始回充".format(device_name))
                 notify_msg = "{}开始回充".format(device_name)
+            else:
+                messages.append("抱歉，{}回充失败了".format(device_name))
 
         self._last_notify_message = notify_msg
         return messages
@@ -289,35 +329,43 @@ class CommandInterceptor:
         self._last_notify_message = notify_msg
         return messages
 
-    async def _execute_appliance(self, entity_id: str, action: str, device_name: str, device_type: str):
+    async def _execute_appliance(self, entity_id: str, action: str, device_name: str, device_type: str, command_id: str = ""):
         messages = []
         notify_msg = ""
-        domain = device_type
-        if domain == "refrigerator":
-            domain = "switch"
-        elif domain in ("dishwasher", "washing_machine", "dryer"):
-            domain = "switch"
 
         if action == "query":
             state = await self.ha_client.get_state(entity_id)
             if state:
-                response = self._format_appliance_state(device_name, device_type, state.get("state", ""), state.get("attributes", {}))
+                response = await self._format_appliance_state(device_name, device_type, state.get("state", ""), state.get("attributes", {}), command_id)
                 messages.append(response)
         elif action == "turn_on":
-            success = await self.ha_client.generic_turn_on(domain, entity_id)
+            # 洗衣机/烘干机：海尔用 select 域控制开关机，需要选"开机"
+            if device_type in ("washing_machine", "dryer"):
+                success = await self.ha_client.generic_turn_on_select(entity_id, "开机")
+            else:
+                success = await self.ha_client.generic_turn_on("switch", entity_id)
             if success:
-                messages.append("好的，已为你启动{}".format(device_name))
-                notify_msg = "已经启动{}".format(device_name)
+                verb = {"washing_machine": "启动", "dryer": "启动", "dishwasher": "启动"}.get(device_type, "启动")
+                messages.append("好的，已为你{}{}".format(verb, device_name))
+                notify_msg = "已经{}{}".format(verb, device_name)
+            else:
+                messages.append("抱歉，{}{}失败了".format("启动", device_name))
         elif action == "turn_off":
-            success = await self.ha_client.generic_turn_off(domain, entity_id)
+            if device_type in ("washing_machine", "dryer"):
+                success = await self.ha_client.generic_turn_off("switch", entity_id)
+            else:
+                success = await self.ha_client.generic_turn_off("switch", entity_id)
             if success:
-                messages.append("好的，已为你停止{}".format(device_name))
-                notify_msg = "已经停止{}".format(device_name)
+                verb = {"washing_machine": "停止", "dryer": "停止", "dishwasher": "停止"}.get(device_type, "停止")
+                messages.append("好的，已为你{}{}".format(verb, device_name))
+                notify_msg = "已经{}{}".format(verb, device_name)
+            else:
+                messages.append("抱歉，{}{}失败了".format("停止", device_name))
 
         self._last_notify_message = notify_msg
         return messages
 
-    async def _handle_query(self, entity_id: str, device_name: str, device_type: str, tts_speaker: str):
+    async def _handle_query(self, entity_id: str, device_name: str, device_type: str, tts_speaker: str, command_id: str = ""):
         state = await self.ha_client.get_state(entity_id)
         if not state:
             if self.config.tts.enabled and tts_speaker:
@@ -332,7 +380,7 @@ class CommandInterceptor:
 
         appliance_types = ("refrigerator", "dishwasher", "washing_machine", "dryer")
         if device_type in appliance_types:
-            response_text = self._format_appliance_state(device_name, device_type, state_value, attributes)
+            response_text = await self._format_appliance_state(device_name, device_type, state_value, attributes, command_id)
         else:
             response_text = self._format_state_response(device_name, device_type, state_value, attributes)
 
@@ -396,7 +444,7 @@ class CommandInterceptor:
 
         return "{}当前状态: {}".format(device_name, state)
 
-    def _format_appliance_state(self, device_name: str, device_type: str, state: str, attributes: Dict[str, Any]) -> str:
+    async def _format_appliance_state(self, device_name: str, device_type: str, state: str, attributes: Dict[str, Any], command_id: str = "") -> str:
         def find_attr(*names):
             for name in names:
                 for key in attributes:
@@ -409,26 +457,55 @@ class CommandInterceptor:
         state_lower = state.lower()
 
         if device_type == "refrigerator":
-            temp = find_attr("temperature", "current_temp", "temp")
-            target_temp = find_attr("target_temp", "set_temp")
-            freezer_temp = find_attr("freezer_temp", "freezer")
-            door_open = find_attr("door_open", "door")
             parts = ["{}".format(device_name)]
 
-            if temp is not None:
-                parts.append("当前温度{}度".format(temp))
-            if freezer_temp is not None:
-                parts.append("冷冻室{}度".format(freezer_temp))
-            if target_temp is not None:
-                parts.append("设置温度{}度".format(target_temp))
-            if door_open is not None and (isinstance(door_open, bool) or str(door_open).lower() in ("true", "on", "open")):
-                parts.append("门没关好")
+            # 优先从 fridge_sensors 配置查询实际传感器
+            fridge_sensors = None
+            if command_id and command_id in self.config.commands:
+                cmd = self.config.commands[command_id]
+                fridge_sensors = getattr(cmd, 'fridge_sensors', None)
+
+            if fridge_sensors:
+                # 查询冷藏室温度
+                if fridge_sensors.refrigerator_temp:
+                    s = await self.ha_client.get_state(fridge_sensors.refrigerator_temp)
+                    if s and s.get("state"):
+                        parts.append("冷藏室{}度".format(s["state"]))
+
+                # 查询冷冻室温度
+                if fridge_sensors.freezer_temp:
+                    s = await self.ha_client.get_state(fridge_sensors.freezer_temp)
+                    if s and s.get("state"):
+                        parts.append("冷冻室{}度".format(s["state"]))
+
+                # 查询速冻锁鲜状态
+                if fridge_sensors.quick_freezing:
+                    s = await self.ha_client.get_state(fridge_sensors.quick_freezing)
+                    if s and s.get("state") == "on":
+                        parts.append("速冻锁鲜已开启")
+
+                # 查询智能存储状态
+                if fridge_sensors.intelligence_mode:
+                    s = await self.ha_client.get_state(fridge_sensors.intelligence_mode)
+                    if s and s.get("state") == "off":
+                        parts.append("智能存储已关闭")
+
+                # 查询珍品变温
+                if fridge_sensors.vt_room:
+                    s = await self.ha_client.get_state(fridge_sensors.vt_room)
+                    if s and s.get("state"):
+                        parts.append("变温室{}".format(s["state"]))
+            else:
+                # 回退：从当前 entity 的 attributes 里找
+                temp = find_attr("temperature", "current_temp", "temp")
+                freezer_temp = find_attr("freezer_temp", "freezer")
+                if temp is not None:
+                    parts.append("当前温度{}度".format(temp))
+                if freezer_temp is not None:
+                    parts.append("冷冻室{}度".format(freezer_temp))
 
             if len(parts) == 1:
-                if state_lower in ("on", "idle"):
-                    parts.append("运行正常")
-                else:
-                    parts.append("状态: {}".format(state))
+                parts.append("运行正常")
             return "，".join(parts)
 
         if device_type in ("dishwasher", "washing_machine", "dryer"):
@@ -438,13 +515,59 @@ class CommandInterceptor:
                 "dryer": "烘干机"
             }.get(device_type, device_name)
 
-            remaining_time = find_attr("remaining_time", "remaining", "time_left", "remain_time")
-            program = find_attr("program", "cycle", "wash_program", "current_program")
-            progress = find_attr("progress", "percent", "completion")
+            # 优先从 appliance_sensors 配置查询实际传感器
+            appliance_sensors = None
+            if command_id and command_id in self.config.commands:
+                cmd = self.config.commands[command_id]
+                appliance_sensors = getattr(cmd, 'appliance_sensors', None)
+
             parts = ["{}".format(device_name)]
 
-            if state_lower in ("on", "running", "cleaning", "washing", "drying"):
-                parts.append("正在运行")
+            if appliance_sensors:
+                # 查询运行模式
+                if appliance_sensors.running_mode:
+                    s = await self.ha_client.get_state(appliance_sensors.running_mode)
+                    if s and s.get("state"):
+                        run_state = str(s["state"]).lower()
+                        if run_state in ("running", "washing", "drying", "on", "cleaning"):
+                            parts.append("正在运行")
+                        elif run_state in ("finished", "completed", "done"):
+                            parts.append("已经完成了")
+                        elif run_state in ("pause", "paused"):
+                            parts.append("已暂停")
+                        elif run_state in ("idle", "standby", "off"):
+                            parts.append("当前待机")
+
+                # 查询剩余时间
+                if appliance_sensors.remaining_time:
+                    s = await self.ha_client.get_state(appliance_sensors.remaining_time)
+                    if s and s.get("state"):
+                        try:
+                            mins = int(float(s["state"]))
+                            if mins > 0:
+                                parts.append("还剩{}分钟".format(mins))
+                            else:
+                                parts.append("即将完成")
+                        except (ValueError, TypeError):
+                            pass
+
+                # 查询当前程序
+                if appliance_sensors.program:
+                    s = await self.ha_client.get_state(appliance_sensors.program)
+                    if s and s.get("state"):
+                        parts.append("当前程序: {}".format(s["state"]))
+            else:
+                # 回退：从当前 entity attributes 里找
+                remaining_time = find_attr("remaining_time", "remaining", "time_left", "remain_time")
+                program = find_attr("program", "cycle", "wash_program", "current_program")
+
+                if state_lower in ("on", "running", "cleaning", "washing", "drying"):
+                    parts.append("正在运行")
+                elif state_lower in ("off", "idle", "standby", "finished", "completed", "done"):
+                    parts.append("当前待机" if state_lower not in ("finished", "completed", "done") else "已经完成了")
+                else:
+                    parts.append("状态: {}".format(state))
+
                 if program:
                     parts.append("当前程序: {}".format(program))
                 if remaining_time is not None:
@@ -452,26 +575,11 @@ class CommandInterceptor:
                         mins = int(float(remaining_time))
                         if mins > 0:
                             parts.append("还剩{}分钟".format(mins))
-                        else:
-                            parts.append("即将完成")
-                    except (ValueError, TypeError):
-                        parts.append("剩余时间: {}".format(remaining_time))
-                if progress is not None:
-                    try:
-                        pct = int(float(progress))
-                        parts.append("已完成{}%".format(pct))
                     except (ValueError, TypeError):
                         pass
-            elif state_lower in ("off", "idle", "standby", "finished", "completed", "done"):
-                if state_lower in ("finished", "completed", "done"):
-                    parts.append("已经洗完了")
-                else:
-                    parts.append("当前待机")
-            elif state_lower in ("paused", "pause"):
-                parts.append("已暂停")
-            else:
-                parts.append("状态: {}".format(state))
 
+            if len(parts) == 1:
+                parts.append("当前待机")
             return "，".join(parts)
 
         return self._format_state_response(device_name, device_type, state, attributes)

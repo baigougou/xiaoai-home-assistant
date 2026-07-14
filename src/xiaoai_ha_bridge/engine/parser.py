@@ -34,12 +34,17 @@ class CommandParser:
             if keyword in text:
                 return self.command_cache[keyword]
 
+        # 无关键词匹配时，如果只有一台扫地机，通过动作词自动路由
         room_action_keywords = ["打扫", "清扫", "扫", "拖", "清洁", "清理", "扫地"]
         vacuum_control_keywords = ["停止", "回充", "暂停", "回去", "回家", "回去充电", "回基站", "停一下", "先停"]
+        vacuum_self_clean_keywords = ["自清洁", "洗拖布", "基站自清洁", "基站清洗"]
+        vacuum_dry_keywords = ["烘干拖布", "烘干抹布", "拖布烘干", "抹布烘干"]
         has_clean_action = any(kw in text for kw in room_action_keywords)
         has_vacuum_control = any(kw in text for kw in vacuum_control_keywords)
+        has_self_clean = any(kw in text for kw in vacuum_self_clean_keywords)
+        has_dry = any(kw in text for kw in vacuum_dry_keywords)
 
-        if len(self.vacuum_devices) == 1 and (has_clean_action or has_vacuum_control):
+        if len(self.vacuum_devices) == 1 and (has_clean_action or has_vacuum_control or has_self_clean or has_dry):
             return self.vacuum_devices[0]
 
         if has_clean_action and self.room_cache:
@@ -117,6 +122,24 @@ class CommandParser:
         return result
 
     def _parse_vacuum(self, text: str, result: Dict[str, Any], cmd_config=None) -> Dict[str, Any]:
+        # 自清洁关键词（优先级最高）
+        self_clean_keywords = ["自清洁", "洗拖布", "基站自清洁", "基站清洗"]
+        has_self_clean = any(kw in text for kw in self_clean_keywords)
+
+        # 烘干拖布
+        dry_keywords = ["烘干拖布", "烘干抹布", "拖布烘干", "抹布烘干"]
+        has_start_drying = any(kw in text for kw in dry_keywords)
+
+        if has_self_clean:
+            result["action"] = "self_clean"
+            result["query"] = False
+            return result
+
+        if has_start_drying:
+            result["action"] = "start_drying"
+            result["query"] = False
+            return result
+
         has_turn_off = any(kw in text for kw in ["关闭", "关掉", "停止", "回去", "回充", "回去充电"])
         pause_keywords = ["暂停", "停一下", "先停"]
         has_pause = any(kw in text for kw in pause_keywords)

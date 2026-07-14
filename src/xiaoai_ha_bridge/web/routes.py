@@ -52,20 +52,37 @@ async def get_config():
 @router.post("/api/config")
 async def save_config(config_data: Dict[str, Any] = Body(...)):
     try:
-        if "xiaomi_speaker" in config_data and "xiaomi_speakers" not in config_data:
-            config_data["xiaomi_speakers"] = [config_data.pop("xiaomi_speaker")]
+        # 增量合并：先加载现有配置，再用前端传来的字段覆盖
+        try:
+            existing = config_manager.load()
+            existing_dict = existing.dict()
+        except FileNotFoundError:
+            existing_dict = {}
 
-        if "xiaomi_speakers" in config_data:
+        # 递归合并（只覆盖前端传来的字段，保留未传的字段）
+        def deep_merge(base, update):
+            for key, value in update.items():
+                if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                    deep_merge(base[key], value)
+                else:
+                    base[key] = value
+
+        deep_merge(existing_dict, config_data)
+
+        if "xiaomi_speaker" in existing_dict and "xiaomi_speakers" not in existing_dict:
+            existing_dict["xiaomi_speakers"] = [existing_dict.pop("xiaomi_speaker")]
+
+        if "xiaomi_speakers" in existing_dict:
             speakers = []
-            for sp in config_data["xiaomi_speakers"]:
+            for sp in existing_dict["xiaomi_speakers"]:
                 if isinstance(sp, str):
-                    speakers.append({"entity_id": sp})
+                    speakers.append({"entity_id": sp, "execute_text_service": "xiaomi_miot.intelligent_speaker", "play_text_service": "xiaomi_miot.intelligent_speaker"})
                 elif isinstance(sp, dict) and sp.get("entity_id"):
                     speakers.append(sp)
-            config_data["xiaomi_speakers"] = speakers
+            existing_dict["xiaomi_speakers"] = speakers
 
-        if "commands" in config_data:
-            for cmd_id, cmd in config_data["commands"].items():
+        if "commands" in existing_dict:
+            for cmd_id, cmd in existing_dict["commands"].items():
                 if "device_type" not in cmd or not cmd["device_type"]:
                     entity_id = cmd.get("entity_id", "")
                     if entity_id.startswith("vacuum."):
@@ -79,7 +96,7 @@ async def save_config(config_data: Dict[str, Any] = Body(...)):
                     else:
                         cmd["device_type"] = "climate"
 
-        config = AppConfig(**config_data)
+        config = AppConfig(**existing_dict)
         config_manager.save(config)
 
         if _interceptor and _poller:
@@ -210,11 +227,13 @@ async def get_command_suggestions():
 
     type_icons = {
         "climate": "🌡️", "vacuum": "🤖", "refrigerator": "🧊",
+        "washing_machine": "👕", "dryer": "👔",
         "light": "💡", "switch": "🔌", "fan": "🌀",
         "cover": "🪟", "curtain": "🪟"
     }
     type_labels = {
         "climate": "空调", "vacuum": "扫地机", "refrigerator": "冰箱",
+        "washing_machine": "洗衣机", "dryer": "烘干机",
         "light": "灯光", "switch": "开关", "fan": "风扇",
         "cover": "窗帘/晾衣架", "curtain": "窗帘"
     }
@@ -234,12 +253,12 @@ async def get_command_suggestions():
             ]
         elif dtype == "vacuum":
             suggestions = [
-                "{}开始全屋清扫".format(name),
-                "{}停止".format(name),
-                "{}回去充电".format(name),
-                "{}暂停".format(name),
-                "{}的状态".format(name),
-                "{}扫拖模式".format(name),
+                "扫拖客厅",
+                "仅拖厨房",
+                "打扫主卧",
+                "自清洁",
+                "回去充电",
+                "状态",
             ]
         elif dtype == "refrigerator":
             suggestions = [
@@ -247,6 +266,13 @@ async def get_command_suggestions():
                 "{}温度".format(name),
                 "{}状态".format(name),
                 "{}门关好没".format(name),
+            ]
+        elif dtype in ("washing_machine", "dryer"):
+            suggestions = [
+                "{}状态".format(name),
+                "{}还要多久".format(name),
+                "{}开始".format(name),
+                "{}停止".format(name),
             ]
         elif dtype in ("cover", "curtain"):
             suggestions = [

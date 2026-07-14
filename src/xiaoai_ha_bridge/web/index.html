@@ -32,18 +32,14 @@
             line-height: 1.6;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 24px 20px;
-        }
+        .container { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
 
+        /* Header */
         header {
             text-align: center;
-            margin-bottom: 32px;
-            padding: 32px 0 20px;
+            margin-bottom: 24px;
+            padding: 28px 0 16px;
         }
-
         header h1 {
             font-size: 28px;
             font-weight: 700;
@@ -51,60 +47,141 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
+        header .subtitle { color: var(--text-muted); font-size: 14px; }
 
-        header .subtitle {
+        /* Tabs */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 4px;
+            border: 1px solid var(--border);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
             color: var(--text-muted);
             font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
         }
+        .tab-btn.active { background: var(--accent); color: #fff; }
+        .tab-btn:hover:not(.active) { color: var(--text); }
 
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Status Bar */
         .status-bar {
             display: flex;
             align-items: center;
             gap: 12px;
             justify-content: center;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
             padding: 10px 20px;
             background: var(--card-bg);
             border-radius: var(--radius);
             border: 1px solid var(--border);
         }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .status-dot.online { background: var(--success); animation: pulse 2s infinite; }
+        .status-dot.offline { background: var(--danger); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--success);
-            animation: pulse 2s infinite;
+        /* Forms */
+        .form-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
         }
-
-        .status-dot.offline {
-            background: var(--danger);
-            animation: none;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .section-title {
+        .form-section h2 {
             font-size: 18px;
             font-weight: 600;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
-        .device-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
+        .form-section .desc {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 18px;
         }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+        .form-group input::placeholder { color: var(--text-muted); }
+        .form-group .hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+        /* Result box */
+        .result-box {
+            margin-top: 14px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            white-space: pre-wrap;
+        }
+        .result-box.show { display: block; }
+        .result-box.success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+        .result-box.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+        .result-box.info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+
+        /* Device Grid */
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; margin-bottom: 32px; }
         .device-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -112,25 +189,10 @@
             padding: 20px;
             transition: all 0.2s ease;
         }
-
-        .device-card:hover {
-            border-color: var(--accent);
-            box-shadow: var(--shadow);
-            transform: translateY(-1px);
-        }
-
-        .device-card .icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
-
-        .device-card .name {
-            font-size: 17px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .device-card .type-badge {
+        .device-card:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-1px); }
+        .device-card .icon { font-size: 32px; margin-bottom: 8px; }
+        .device-card .name { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+        .type-badge {
             display: inline-block;
             font-size: 12px;
             padding: 2px 10px;
@@ -138,23 +200,14 @@
             font-weight: 500;
             margin-bottom: 10px;
         }
-
         .badge-climate { background: rgba(59,130,246,0.2); color: #60a5fa; }
         .badge-vacuum { background: rgba(139,92,246,0.2); color: #a78bfa; }
         .badge-refrigerator { background: rgba(20,184,166,0.2); color: #2dd4bf; }
         .badge-light { background: rgba(245,158,11,0.2); color: #fbbf24; }
         .badge-cover { background: rgba(34,197,94,0.2); color: #4ade80; }
 
-        .device-card .suggestions {
-            margin-top: 10px;
-        }
-
-        .device-card .suggestions .label {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
+        .device-card .suggestions { margin-top: 10px; }
+        .device-card .suggestions .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
         .suggestion-tag {
             display: inline-block;
             font-size: 12px;
@@ -167,28 +220,18 @@
             transition: all 0.15s ease;
             color: var(--text-muted);
         }
+        .suggestion-tag:hover { background: rgba(59,130,246,0.15); border-color: var(--accent); color: var(--text); }
 
-        .suggestion-tag:hover {
-            background: rgba(59,130,246,0.15);
-            border-color: var(--accent);
-            color: var(--text);
-        }
-
+        /* Test Section */
         .test-section {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 24px;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
         }
-
-        .test-section .input-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .test-section input {
+        .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .input-row input {
             flex: 1;
             min-width: 200px;
             padding: 12px 16px;
@@ -200,99 +243,34 @@
             outline: none;
             transition: border-color 0.2s;
         }
+        .input-row input:focus { border-color: var(--accent); }
 
-        .test-section input:focus {
-            border-color: var(--accent);
-        }
-
-        .test-section input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border-radius: 8px;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.05);
-        }
-
-        .result-box {
-            margin-top: 16px;
-            padding: 14px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .result-box.success {
-            display: block;
-            background: rgba(34,197,94,0.1);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: #86efac;
-        }
-
-        .result-box.error {
-            display: block;
-            background: rgba(239,68,68,0.1);
-            border: 1px solid rgba(239,68,68,0.3);
-            color: #fca5a5;
-        }
-
-        .result-box.info {
-            display: block;
-            background: rgba(59,130,246,0.1);
-            border: 1px solid rgba(59,130,246,0.3);
-            color: #93c5fd;
-        }
-
+        /* Info */
         .info-box {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 20px 24px;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
         }
+        .info-box h3 { font-size: 16px; margin-bottom: 10px; color: var(--warning); }
+        .info-box ul { padding-left: 20px; color: var(--text-muted); font-size: 14px; }
+        .info-box li { margin-bottom: 6px; }
 
-        .info-box h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
-            color: var(--warning);
-        }
-
-        .info-box ul {
-            padding-left: 20px;
-            color: var(--text-muted);
+        /* Speaker list */
+        .speaker-list { list-style: none; padding: 0; }
+        .speaker-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
             font-size: 14px;
         }
-
-        .info-box li {
-            margin-bottom: 6px;
-        }
+        .speaker-item code { color: var(--accent); font-size: 13px; }
 
         footer {
             text-align: center;
@@ -302,23 +280,12 @@
             border-top: 1px solid var(--border);
             margin-top: 40px;
         }
-
-        footer a {
-            color: var(--accent);
-            text-decoration: none;
-        }
+        footer a { color: var(--accent); text-decoration: none; }
 
         @media (max-width: 600px) {
-            .device-grid {
-                grid-template-columns: 1fr;
-            }
-            .test-section .input-row {
-                flex-direction: column;
-            }
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
+            .device-grid { grid-template-columns: 1fr; }
+            .input-row { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -329,36 +296,105 @@
             <p class="subtitle">小爱音箱 → Home Assistant 桥接控制台</p>
         </header>
 
-        <div class="status-bar">
-            <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">正在检查连接...</span>
+        <!-- Tab Nav -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">📊 仪表盘</button>
+            <button class="tab-btn" onclick="switchTab('settings')">⚙️ 连接配置</button>
+            <button class="tab-btn" onclick="switchTab('test')">🧪 指令测试</button>
         </div>
 
-        <div class="info-box">
-            <h3>💡 使用说明</h3>
-            <ul>
-                <li>本服务用于<strong>小爱音箱控制非米家设备</strong>（如格力/美的空调、追觅扫地机、冰箱等）</li>
-                <li>米家原生设备（灯光、窗帘、浴霸、晾衣架）小爱可直接控制，<strong>无需通过本桥接服务</strong></li>
-                <li>点击下方建议指令可快速复制到测试框</li>
-                <li>语音指令支持自然语言，如「打开主卧空调」「小孩房空调多少度」「让追觅去打扫客厅」</li>
-            </ul>
-        </div>
+        <!-- ==================== 仪表盘 ==================== -->
+        <div class="tab-panel active" id="tab-dashboard">
+            <div class="status-bar">
+                <div class="status-dot offline" id="statusDot"></div>
+                <span id="statusText">正在检查...</span>
+            </div>
 
-        <div class="section-title">📱 可控设备</div>
-        <div class="device-grid" id="deviceGrid">
-            <div class="device-card" style="text-align:center; padding: 40px 20px;">
-                <p style="color: var(--text-muted);">正在加载设备列表...</p>
+            <div class="info-box">
+                <h3>💡 使用说明</h3>
+                <ul>
+                    <li>本服务用于<strong>小爱音箱控制非米家设备</strong>（如格力/美的空调、追觅扫地机、冰箱等）</li>
+                    <li>米家原生设备（灯光、窗帘、浴霸、晾衣架）小爱可直接控制，<strong>无需通过本桥接服务</strong></li>
+                    <li>点击建议指令可快速填入测试框</li>
+                    <li>语音指令支持自然语言，如「打开主卧空调」「小孩房空调多少度」「追觅去打扫客厅」</li>
+                </ul>
+            </div>
+
+            <div class="section-title">📱 可控设备</div>
+            <div class="device-grid" id="deviceGrid">
+                <div class="device-card" style="text-align:center; padding: 40px 20px;">
+                    <p style="color: var(--text-muted);">正在加载设备列表...</p>
+                </div>
             </div>
         </div>
 
-        <div class="test-section">
-            <div class="section-title">🧪 指令测试</div>
-            <div class="input-row">
-                <input type="text" id="testInput" placeholder="输入语音指令，如「打开主卧空调」「追觅开始全屋清扫」" />
-                <button class="btn btn-primary" onclick="testCommand()">发送测试</button>
-                <button class="btn btn-secondary" onclick="testParse()">仅解析</button>
+        <!-- ==================== 连接配置 ==================== -->
+        <div class="tab-panel" id="tab-settings">
+            <!-- HA 连接 -->
+            <div class="form-section">
+                <h2>🏠 Home Assistant 连接</h2>
+                <p class="desc">配置 Home Assistant 的访问地址和长期访问令牌。令牌在 HA 的「个人资料 → 长期访问令牌」中创建。</p>
+                <div class="form-group">
+                    <label>HA 地址</label>
+                    <input type="text" id="haUrl" placeholder="https://your-ha-instance:8123" />
+                    <div class="hint">含协议和端口，如 https://ha.catop.cf:14444</div>
+                </div>
+                <div class="form-group">
+                    <label>长期访问令牌 (Token)</label>
+                    <input type="password" id="haToken" placeholder="eyJhbGciOi..." />
+                    <div class="hint">在 HA 个人资料页面底部创建</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveHAConfig()">💾 保存连接配置</button>
+                    <button class="btn btn-secondary" onclick="testHAConnection()">🔍 测试连接</button>
+                </div>
+                <div class="result-box" id="haResult"></div>
             </div>
-            <div class="result-box" id="resultBox"></div>
+
+            <!-- 音箱配置 -->
+            <div class="form-section">
+                <h2>🔊 小爱音箱</h2>
+                <p class="desc">配置要通过此桥接服务监听的小爱音箱。需要 xiaomi_miot 集成已安装。</p>
+                <div class="form-group">
+                    <label>添加音箱 Entity ID</label>
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="speakerInput" placeholder="media_player.xiaomi_lx06_xxxx_play_control" style="flex:1;" />
+                        <button class="btn btn-primary" onclick="addSpeaker()">添加</button>
+                    </div>
+                    <div class="hint">格式: media_player.xiaomi_lx06_xxxx_play_control</div>
+                </div>
+                <ul class="speaker-list" id="speakerList">
+                    <li class="speaker-item" style="color:var(--text-muted);">正在加载...</li>
+                </ul>
+                <div class="result-box" id="speakerResult"></div>
+            </div>
+
+            <!-- 全局保存 -->
+            <div class="btn-group" style="margin-bottom:24px;">
+                <button class="btn btn-success" onclick="saveAllConfig()">✅ 保存全部配置</button>
+                <button class="btn btn-danger" onclick="restartService()">🔄 重启服务</button>
+            </div>
+            <div class="result-box" id="saveResult"></div>
+        </div>
+
+        <!-- ==================== 指令测试 ==================== -->
+        <div class="tab-panel" id="tab-test">
+            <div class="test-section">
+                <div class="section-title">🧪 指令测试</div>
+                <div class="input-row">
+                    <input type="text" id="testInput" placeholder="输入语音指令，如「打开主卧空调」「追觅开始全屋清扫」" />
+                    <button class="btn btn-primary" onclick="testCommand()">发送测试</button>
+                    <button class="btn btn-secondary" onclick="testParse()">仅解析</button>
+                </div>
+                <div class="result-box" id="testResult"></div>
+            </div>
+
+            <div class="section-title">📱 可用设备</div>
+            <div class="device-grid" id="testDeviceGrid">
+                <div class="device-card" style="text-align:center; padding: 40px 20px;">
+                    <p style="color: var(--text-muted);">正在加载...</p>
+                </div>
+            </div>
         </div>
 
         <footer>
@@ -367,211 +403,278 @@
     </div>
 
     <script>
-        // 设备类型图标映射
-        const typeIcons = {
-            climate: '🌡️',
-            vacuum: '🤖',
-            refrigerator: '🧊',
-            light: '💡',
-            switch: '🔌',
-            fan: '🌀',
-            cover: '🪟',
-            curtain: '🪟'
-        };
-
-        const typeLabels = {
-            climate: '空调',
-            vacuum: '扫地机',
-            refrigerator: '冰箱',
-            light: '灯光',
-            switch: '开关',
-            fan: '风扇',
-            cover: '窗帘/晾衣架',
-            curtain: '窗帘'
-        };
-
-        const badgeClass = {
-            climate: 'badge-climate',
-            vacuum: 'badge-vacuum',
-            refrigerator: 'badge-refrigerator',
-            light: 'badge-light',
-            switch: 'badge-climate',
-            fan: 'badge-climate',
-            cover: 'badge-cover',
-            curtain: 'badge-cover'
-        };
-
-        // 语音指令建议生成
-        function getSuggestions(device) {
-            const suggestions = [];
-            const name = device.name;
-            const type = device.device_type;
-
-            if (type === 'climate') {
-                suggestions.push(`打开${name}`);
-                suggestions.push(`关闭${name}`);
-                suggestions.push(`${name}多少度`);
-                suggestions.push(`${name}制冷26度`);
-                suggestions.push(`${name}制热模式`);
-                suggestions.push(`${name}调到24度`);
-            } else if (type === 'vacuum') {
-                suggestions.push(`${name}开始全屋清扫`);
-                suggestions.push(`${name}停止`);
-                suggestions.push(`${name}回去充电`);
-                suggestions.push(`${name}暂停`);
-                suggestions.push(`${name}的状态`);
-                suggestions.push(`${name}扫拖模式`);
-            } else if (type === 'refrigerator') {
-                suggestions.push(`${name}多少度`);
-                suggestions.push(`${name}温度`);
-                suggestions.push(`${name}状态`);
-                suggestions.push(`${name}门关好没`);
-            } else if (type === 'cover' || type === 'curtain') {
-                suggestions.push(`打开${name}`);
-                suggestions.push(`关闭${name}`);
-                suggestions.push(`${name}状态`);
-            } else {
-                suggestions.push(`打开${name}`);
-                suggestions.push(`关闭${name}`);
-                suggestions.push(`${name}状态`);
-            }
-            return suggestions;
+        // ========== Tab Switching ==========
+        function switchTab(name) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            event.target.classList.add('active');
+            if (name === 'settings') loadSettings();
+            if (name === 'test') loadTestDevices();
         }
 
-        async function loadDevices() {
-            try {
-                const resp = await fetch('/api/config');
-                const config = await resp.json();
-                const commands = config.commands || {};
-
-                const grid = document.getElementById('deviceGrid');
-                if (Object.keys(commands).length === 0) {
-                    grid.innerHTML = '<div class="device-card" style="text-align:center; padding: 40px 20px;"><p style="color: var(--text-muted);">暂无设备配置，请先在配置页面添加设备</p></div>';
-                    return;
-                }
-
-                grid.innerHTML = '';
-                for (const [id, device] of Object.entries(commands)) {
-                    const type = device.device_type || 'climate';
-                    const icon = typeIcons[type] || '📦';
-                    const label = typeLabels[type] || type;
-                    const badge = badgeClass[type] || 'badge-climate';
-                    const suggestions = getSuggestions(device);
-
-                    const card = document.createElement('div');
-                    card.className = 'device-card';
-                    card.innerHTML = `
-                        <div class="icon">${icon}</div>
-                        <div class="name">${device.name}</div>
-                        <span class="type-badge ${badge}">${label}</span>
-                        <div style="font-size:12px; color: var(--text-muted); margin-bottom: 4px;">
-                            ${device.entity_id}
-                        </div>
-                        <div class="suggestions">
-                            <div class="label">💬 语音指令建议：</div>
-                            ${suggestions.map(s =>
-                                `<span class="suggestion-tag" onclick="fillTest('${s}')" title="点击填入测试框">${s}</span>`
-                            ).join('')}
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                }
-            } catch (e) {
-                console.error('加载设备失败:', e);
-                document.getElementById('deviceGrid').innerHTML =
-                    '<div class="device-card" style="text-align:center; padding: 40px 20px;"><p style="color: #fca5a5;">加载失败，请检查服务是否正常运行</p></div>';
-            }
+        // ========== Helpers ==========
+        function showResult(id, type, msg) {
+            const el = document.getElementById(id);
+            el.className = 'result-box show ' + type;
+            el.textContent = msg;
+            setTimeout(() => { if (el.classList.contains('show')) el.classList.remove('show'); }, 8000);
         }
 
-        function fillTest(text) {
-            document.getElementById('testInput').value = text;
-            document.getElementById('testInput').focus();
-        }
-
+        // ========== Dashboard ==========
         async function checkHealth() {
             try {
-                const resp = await fetch('/api/health');
-                const data = await resp.json();
-                document.getElementById('statusDot').classList.remove('offline');
-                document.getElementById('statusText').textContent =
-                    `服务运行中 · v${data.version}`;
+                const r = await fetch('/api/health');
+                const d = await r.json();
+                const dot = document.getElementById('statusDot');
+                dot.className = 'status-dot online';
+                document.getElementById('statusText').textContent = '服务运行中 · v' + d.version;
             } catch (e) {
-                document.getElementById('statusDot').classList.add('offline');
+                document.getElementById('statusDot').className = 'status-dot offline';
                 document.getElementById('statusText').textContent = '服务连接失败';
             }
         }
 
-        function showResult(type, message) {
-            const box = document.getElementById('resultBox');
-            box.className = 'result-box ' + type;
-            box.textContent = message;
-            box.style.display = 'block';
+        function renderDeviceGrid(containerId, commands) {
+            const icons = { climate: '🌡️', vacuum: '🤖', refrigerator: '🧊', washing_machine: '👕', dryer: '👔', light: '💡', switch: '🔌', fan: '🌀', cover: '🪟', curtain: '🪟' };
+            const labels = { climate: '空调', vacuum: '扫地机', refrigerator: '冰箱', washing_machine: '洗衣机', dryer: '烘干机', light: '灯光', switch: '开关', fan: '风扇', cover: '窗帘/晾衣架', curtain: '窗帘' };
+            const badges = { climate: 'badge-climate', vacuum: 'badge-vacuum', refrigerator: 'badge-refrigerator', washing_machine: 'badge-climate', dryer: 'badge-climate', light: 'badge-light', cover: 'badge-cover', curtain: 'badge-cover' };
+
+            function getSugg(dev) {
+                const n = dev.name, t = dev.device_type || 'climate';
+                if (t === 'climate') return ['打开'+n, '关闭'+n, n+'多少度', n+'制冷26度', n+'制热模式', n+'调到24度'];
+                if (t === 'vacuum') return ['扫拖客厅', '仅拖厨房', '打扫主卧', '自清洁', '回去充电', '状态'];
+                if (t === 'refrigerator') return [n+'多少度', n+'温度', n+'状态', n+'门关好没'];
+                if (t === 'washing_machine') return [n+'状态', n+'还要多久', n+'开始', n+'停止'];
+                if (t === 'dryer') return [n+'状态', n+'还要多久', n+'开始', n+'停止'];
+                if (t === 'cover' || t === 'curtain') return ['打开'+n, '关闭'+n, n+'状态'];
+                return ['打开'+n, '关闭'+n, n+'状态'];
+            }
+
+            const grid = document.getElementById(containerId);
+            if (!commands || Object.keys(commands).length === 0) {
+                grid.innerHTML = '<div class="device-card" style="text-align:center;padding:40px 20px;"><p style="color:var(--text-muted);">暂无设备配置</p></div>';
+                return;
+            }
+            grid.innerHTML = '';
+            for (const [id, dev] of Object.entries(commands)) {
+                const t = dev.device_type || 'climate';
+                const suggs = getSugg(dev);
+                const card = document.createElement('div');
+                card.className = 'device-card';
+                card.innerHTML = `
+                    <div class="icon">${icons[t] || '📦'}</div>
+                    <div class="name">${dev.name}</div>
+                    <span class="type-badge ${badges[t] || 'badge-climate'}">${labels[t] || t}</span>
+                    <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">${dev.entity_id}</div>
+                    <div class="suggestions">
+                        <div class="label">💬 语音指令建议：</div>
+                        ${suggs.map(s => `<span class="suggestion-tag" onclick="document.getElementById('testInput').value='${s}';switchTab('test')">${s}</span>`).join('')}
+                    </div>`;
+                grid.appendChild(card);
+            }
+        }
+
+        async function loadDashboardDevices() {
+            try {
+                const r = await fetch('/api/config');
+                const cfg = await r.json();
+                renderDeviceGrid('deviceGrid', cfg.commands);
+            } catch (e) {
+                document.getElementById('deviceGrid').innerHTML = '<div class="device-card" style="text-align:center;padding:40px 20px;"><p style="color:#fca5a5;">加载失败</p></div>';
+            }
+        }
+
+        // ========== Settings ==========
+        let configCache = null;
+
+        async function loadSettings() {
+            try {
+                const r = await fetch('/api/config');
+                configCache = await r.json();
+                document.getElementById('haUrl').value = configCache.home_assistant?.url || '';
+                document.getElementById('haToken').value = configCache.home_assistant?.api_token || '';
+                renderSpeakerList(configCache.xiaomi_speakers || []);
+            } catch (e) {
+                showResult('haResult', 'error', '加载配置失败: ' + e.message);
+            }
+        }
+
+        function renderSpeakerList(speakers) {
+            const list = document.getElementById('speakerList');
+            if (!speakers || speakers.length === 0) {
+                list.innerHTML = '<li class="speaker-item" style="color:var(--text-muted);">暂无音箱，请在上方添加</li>';
+                return;
+            }
+            list.innerHTML = speakers.map((sp, i) => `
+                <li class="speaker-item">
+                    <span><code>${sp.entity_id}</code></span>
+                    <button class="btn btn-danger btn-sm" onclick="removeSpeaker(${i})">移除</button>
+                </li>
+            `).join('');
+        }
+
+        function addSpeaker() {
+            const input = document.getElementById('speakerInput');
+            const val = input.value.trim();
+            if (!val) { showResult('speakerResult', 'error', '请输入音箱 Entity ID'); return; }
+            if (!val.startsWith('media_player.')) { showResult('speakerResult', 'error', 'Entity ID 应以 media_player. 开头'); return; }
+            if (!configCache) configCache = { xiaomi_speakers: [] };
+            if (!configCache.xiaomi_speakers) configCache.xiaomi_speakers = [];
+            if (configCache.xiaomi_speakers.some(s => s.entity_id === val)) {
+                showResult('speakerResult', 'error', '该音箱已存在');
+                return;
+            }
+            configCache.xiaomi_speakers.push({
+                entity_id: val,
+                execute_text_service: 'xiaomi_miot.intelligent_speaker',
+                play_text_service: 'xiaomi_miot.intelligent_speaker'
+            });
+            renderSpeakerList(configCache.xiaomi_speakers);
+            input.value = '';
+            showResult('speakerResult', 'success', '已添加（记得点下方保存全部配置）');
+        }
+
+        function removeSpeaker(idx) {
+            configCache.xiaomi_speakers.splice(idx, 1);
+            renderSpeakerList(configCache.xiaomi_speakers);
+            showResult('speakerResult', 'info', '已移除（记得点下方保存全部配置）');
+        }
+
+        async function saveHAConfig() {
+            const url = document.getElementById('haUrl').value.trim();
+            const token = document.getElementById('haToken').value.trim();
+            if (!url) { showResult('haResult', 'error', '请输入 HA 地址'); return; }
+            if (!token) { showResult('haResult', 'error', '请输入访问令牌'); return; }
+            if (!configCache) configCache = {};
+            configCache.home_assistant = { url, api_token: token };
+            await doSaveConfig();
+        }
+
+        async function saveAllConfig() {
+            const url = document.getElementById('haUrl').value.trim();
+            const token = document.getElementById('haToken').value.trim();
+            if (!configCache) configCache = {};
+            configCache.home_assistant = { url, api_token: token };
+            await doSaveConfig();
+        }
+
+        async function doSaveConfig() {
+            try {
+                const r = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(configCache)
+                });
+                const d = await r.json();
+                if (r.ok) {
+                    showResult('saveResult', 'success', '✅ ' + (d.message || '配置保存成功'));
+                    showResult('haResult', 'success', '✅ 配置已保存');
+                    // 重新加载
+                    const r2 = await fetch('/api/config');
+                    configCache = await r2.json();
+                    renderSpeakerList(configCache.xiaomi_speakers || []);
+                } else {
+                    showResult('saveResult', 'error', '❌ ' + (d.detail || '保存失败'));
+                }
+            } catch (e) {
+                showResult('saveResult', 'error', '❌ 保存失败: ' + e.message);
+            }
+        }
+
+        async function testHAConnection() {
+            const url = document.getElementById('haUrl').value.trim();
+            const token = document.getElementById('haToken').value.trim();
+            if (!url || !token) { showResult('haResult', 'error', '请先填写 HA 地址和令牌'); return; }
+            showResult('haResult', 'info', '⏳ 正在测试连接...');
+            try {
+                const r = await fetch('/api/test/ha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, api_token: token })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    showResult('haResult', 'success', '✅ 连接成功！Home Assistant 响应正常');
+                } else {
+                    showResult('haResult', 'error', '❌ 连接失败: ' + (d.error || '请检查地址和令牌'));
+                }
+            } catch (e) {
+                showResult('haResult', 'error', '❌ 请求失败: ' + e.message);
+            }
+        }
+
+        async function restartService() {
+            if (!confirm('确定要重启服务吗？')) return;
+            showResult('saveResult', 'info', '⏳ 正在重启...');
+            try {
+                await fetch('/api/restart', { method: 'POST' });
+                showResult('saveResult', 'success', '✅ 重启指令已发送，页面即将刷新...');
+                setTimeout(() => location.reload(), 3000);
+            } catch (e) {
+                showResult('saveResult', 'error', '重启失败: ' + e.message);
+            }
+        }
+
+        // ========== Test ==========
+        async function loadTestDevices() {
+            try {
+                const r = await fetch('/api/config');
+                const cfg = await r.json();
+                renderDeviceGrid('testDeviceGrid', cfg.commands);
+            } catch (e) {}
         }
 
         async function testCommand() {
             const text = document.getElementById('testInput').value.trim();
-            if (!text) {
-                showResult('error', '请输入指令内容');
-                return;
-            }
-
-            showResult('info', '⏳ 正在执行指令...');
+            if (!text) { showResult('testResult', 'error', '请输入指令内容'); return; }
+            showResult('testResult', 'info', '⏳ 正在执行...');
             try {
-                const resp = await fetch('/api/command/execute', {
+                const r = await fetch('/api/command/execute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({ text })
                 });
-                const data = await resp.json();
-                if (data.success) {
-                    showResult('success', '✅ ' + data.message);
-                } else {
-                    showResult('error', '❌ ' + (data.error || data.message || '执行失败'));
-                }
+                const d = await r.json();
+                showResult('testResult', d.success ? 'success' : 'error', (d.success ? '✅ ' : '❌ ') + (d.message || d.error || '未知结果'));
             } catch (e) {
-                showResult('error', '❌ 请求失败: ' + e.message);
+                showResult('testResult', 'error', '❌ 请求失败: ' + e.message);
             }
         }
 
         async function testParse() {
             const text = document.getElementById('testInput').value.trim();
-            if (!text) {
-                showResult('error', '请输入指令内容');
-                return;
-            }
-
+            if (!text) { showResult('testResult', 'error', '请输入指令内容'); return; }
             try {
-                const resp = await fetch('/api/command/test', {
+                const r = await fetch('/api/command/test', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({ text })
                 });
-                const data = await resp.json();
-                if (data.matched) {
-                    const p = data.parsed;
-                    let detail = `✅ 匹配成功: ${p.name} (${p.entity_id})\n`;
-                    detail += `设备类型: ${p.device_type}\n`;
-                    detail += `动作: ${p.action || '查询'}\n`;
-                    if (p.temperature) detail += `温度: ${p.temperature}°C\n`;
-                    if (p.mode) detail += `模式: ${p.mode}\n`;
-                    if (p.clean_mode) detail += `清扫模式: ${p.clean_mode}\n`;
-                    if (p.room) detail += `房间: ${p.room}\n`;
-                    showResult('info', detail);
+                const d = await r.json();
+                if (d.matched) {
+                    const p = d.parsed;
+                    let detail = '✅ 匹配成功: ' + p.name + ' (' + p.entity_id + ')\n';
+                    detail += '设备类型: ' + p.device_type + '\n';
+                    detail += '动作: ' + (p.action || '查询') + '\n';
+                    if (p.temperature) detail += '温度: ' + p.temperature + '°C\n';
+                    if (p.mode) detail += '模式: ' + p.mode + '\n';
+                    if (p.clean_mode) detail += '清扫模式: ' + p.clean_mode + '\n';
+                    if (p.room) detail += '房间: ' + p.room + '\n';
+                    showResult('testResult', 'info', detail);
                 } else {
-                    showResult('error', '❌ 未匹配到任何设备或指令');
+                    showResult('testResult', 'error', '❌ 未匹配到任何设备或指令');
                 }
             } catch (e) {
-                showResult('error', '❌ 请求失败: ' + e.message);
+                showResult('testResult', 'error', '❌ 请求失败: ' + e.message);
             }
         }
 
-        // 回车键触发测试
+        // ========== Init ==========
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('testInput').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') testCommand();
-            });
             checkHealth();
-            loadDevices();
+            loadDashboardDevices();
+            document.getElementById('testInput').addEventListener('keydown', e => { if (e.key === 'Enter') testCommand(); });
         });
     </script>
 </body>

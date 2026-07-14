@@ -25,6 +25,28 @@ class VacuumRoomConfig(BaseModel):
     clean_mode: str = Field(default="sweep_and_mop", description="清扫模式: sweep/sweep_and_mop/mop")
     repeats: int = Field(default=1, description="清扫次数")
 
+class FridgeSensorsConfig(BaseModel):
+    refrigerator_temp: str = Field(default="", description="冷藏室温度传感器 entity_id")
+    freezer_temp: str = Field(default="", description="冷冻室温度传感器 entity_id")
+    refrigerator_target: str = Field(default="", description="冷藏室目标档位传感器 entity_id")
+    freezer_target: str = Field(default="", description="冷冻室目标档位传感器 entity_id")
+    quick_freezing: str = Field(default="", description="速冻锁鲜开关 entity_id")
+    intelligence_mode: str = Field(default="", description="智能存储开关 entity_id")
+    vt_room: str = Field(default="", description="珍品变温选择 entity_id")
+
+class VacuumSelfCleanConfig(BaseModel):
+    smart_mop_washing: str = Field(default="", description="智能洗拖布开关 entity_id")
+    manual_drying: str = Field(default="", description="手动烘干按钮 entity_id")
+    drying_time: str = Field(default="", description="烘干时间选择 entity_id")
+    self_wash_status: str = Field(default="", description="自清洁基站状态传感器 entity_id")
+
+class WasherDryerSensorsConfig(BaseModel):
+    onoff_status: str = Field(default="", description="开关机状态 entity_id")
+    running_mode: str = Field(default="", description="运行状态传感器 entity_id")
+    remaining_time: str = Field(default="", description="剩余时间传感器 entity_id")
+    program: str = Field(default="", description="当前程序传感器 entity_id")
+    door_status: str = Field(default="", description="门状态传感器 entity_id")
+
 class CommandConfig(BaseModel):
     name: str = Field(..., description="设备名称")
     entity_id: str = Field(..., description="Home Assistant实体ID")
@@ -33,6 +55,9 @@ class CommandConfig(BaseModel):
     rooms: Dict[str, VacuumRoomConfig] = Field(default_factory=dict, description="扫地机器人房间区域配置（仅vacuum类型）")
     default_clean_mode: str = Field(default="sweep_and_mop", description="默认清扫模式")
     default_repeats: int = Field(default=1, description="默认清扫次数")
+    fridge_sensors: Optional[FridgeSensorsConfig] = Field(default=None, description="冰箱传感器配置（仅refrigerator类型）")
+    self_clean_entities: Optional[VacuumSelfCleanConfig] = Field(default=None, description="自清洁基站实体配置（仅vacuum类型）")
+    appliance_sensors: Optional[WasherDryerSensorsConfig] = Field(default=None, description="洗衣机/烘干机传感器配置")
 
 class TTSConfig(BaseModel):
     enabled: bool = Field(default=True, description="是否启用TTS")
