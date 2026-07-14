@@ -255,6 +255,15 @@ class HomeAssistantClient:
     async def generic_turn_off(self, domain: str, entity_id: str) -> bool:
         return await self.call_service(domain, "turn_off", entity_id)
 
+    async def cover_open(self, entity_id: str) -> bool:
+        return await self.call_service("cover", "open_cover", entity_id)
+
+    async def cover_close(self, entity_id: str) -> bool:
+        return await self.call_service("cover", "close_cover", entity_id)
+
+    async def cover_stop(self, entity_id: str) -> bool:
+        return await self.call_service("cover", "stop_cover", entity_id)
+
     async def discover_entities(self) -> Dict[str, List[Dict[str, Any]]]:
         entities = await self.get_all_states()
 

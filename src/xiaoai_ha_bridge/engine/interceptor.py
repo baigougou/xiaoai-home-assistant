@@ -79,6 +79,8 @@ class CommandInterceptor:
             tts_messages = await self._execute_vacuum(entity_id, action, device_name, room, segment_id, clean_mode, repeats)
         elif device_type in ("light", "switch", "fan"):
             tts_messages = await self._execute_switch_light(entity_id, action, device_name, device_type)
+        elif device_type in ("cover", "curtain"):
+            tts_messages = await self._execute_cover(entity_id, action, device_name)
         elif device_type in ("refrigerator", "dishwasher", "washing_machine", "dryer"):
             tts_messages = await self._execute_appliance(entity_id, action, device_name, device_type)
 
@@ -116,10 +118,12 @@ class CommandInterceptor:
                         notify_msg += "，温度{}度".format(int(temperature))
                     messages.append(tts_msg)
                 else:
-                    messages.append("好的，已为你打开{}".format(device_name))
-                    notify_msg = "已经打开{}".format(device_name)
-                    state = await self.ha_client.get_state(entity_id)
-                    if state:
+                    success = await self.ha_client.turn_on_ac(entity_id)
+                    if success:
+                        messages.append("好的，已为你打开{}".format(device_name))
+                        notify_msg = "已经打开{}".format(device_name)
+                        state = await self.ha_client.get_state(entity_id)
+                        if state:
                         attrs = state.get("attributes", {})
                         current_mode = attrs.get("hvac_mode", "")
                         current_temp = attrs.get("temperature")
@@ -135,6 +139,8 @@ class CommandInterceptor:
             if success:
                 messages.append("好的，已为你关闭{}".format(device_name))
                 notify_msg = "已经关闭{}".format(device_name)
+            else:
+                messages.append("抱歉，关闭{}失败了，请稍后再试".format(device_name))
 
         elif action == "adjust":
             need_turn_on = False
@@ -240,11 +246,45 @@ class CommandInterceptor:
             if success:
                 messages.append("好的，已为你打开{}".format(device_name))
                 notify_msg = "已经打开{}".format(device_name)
+            else:
+                messages.append("抱歉，打开{}失败了，请稍后再试".format(device_name))
         elif action == "turn_off":
             success = await self.ha_client.generic_turn_off(domain, entity_id)
             if success:
+                messages.append("好的���已为你关闭{}".format(device_name))
+                notify_msg = "已经关闭{}".format(device_name)
+            else:
+                messages.append("抱歉，关闭{}失败了，请稍后再试".format(device_name))
+
+        self._last_notify_message = notify_msg
+        return messages
+
+    async def _execute_cover(self, entity_id: str, action: str, device_name: str):
+        """执行窗帘/晾衣架等 cover 类设备指令"""
+        messages = []
+        notify_msg = ""
+
+        if action == "turn_on":
+            success = await self.ha_client.cover_open(entity_id)
+            if success:
+                messages.append("好的，已为你打开{}".format(device_name))
+                notify_msg = "已经打开{}".format(device_name)
+            else:
+                messages.append("抱歉，打开{}失败了，请稍后再试".format(device_name))
+        elif action == "turn_off":
+            success = await self.ha_client.cover_close(entity_id)
+            if success:
                 messages.append("好的，已为你关闭{}".format(device_name))
                 notify_msg = "已经关闭{}".format(device_name)
+            else:
+                messages.append("抱歉，关闭{}失败了，请稍后再试".format(device_name))
+        elif action == "stop":
+            success = await self.ha_client.cover_stop(entity_id)
+            if success:
+                messages.append("好的，{}已停止".format(device_name))
+                notify_msg = "{}已停止".format(device_name)
+            else:
+                messages.append("抱歉，停止{}失败了".format(device_name))
 
         self._last_notify_message = notify_msg
         return messages
@@ -342,6 +382,17 @@ class CommandInterceptor:
                 return "{}当前已打开".format(device_name)
             elif state == "off":
                 return "{}当前已关闭".format(device_name)
+
+        if device_type in ("cover", "curtain"):
+            is_closed = attributes.get("is_closed")
+            if is_closed is True or state == "closed":
+                return "{}当前已关闭".format(device_name)
+            elif is_closed is False or state == "open":
+                return "{}当前已打开".format(device_name)
+            elif state == "opening":
+                return "{}正在打开".format(device_name)
+            elif state == "closing":
+                return "{}正在关闭".format(device_name)
 
         return "{}当前状态: {}".format(device_name, state)
 

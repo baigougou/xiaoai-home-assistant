@@ -215,9 +215,10 @@ class CommandParser:
             "还要多久", "剩余时间", "还剩多久", "多久", "结束",
             "工作", "运行", "在干嘛", "在做什么", "门关好没", "门没关"
         ]
-        has_query = any(kw in text for kw in query_keywords) or (not has_turn_on and not has_turn_off)
+        has_explicit_query = any(kw in text for kw in query_keywords)
+        has_query = has_explicit_query or (not has_turn_on and not has_turn_off)
 
-        if has_query or (not has_turn_on and not has_turn_off):
+        if has_query:
             result["query"] = True
             result["action"] = "query"
         elif has_turn_off:
@@ -257,7 +258,7 @@ class CommandParser:
             result = self._parse_climate(text, result)
         elif device_type == "vacuum":
             result = self._parse_vacuum(text, result, cmd_config)
-        elif device_type in ("light", "switch", "fan"):
+        elif device_type in ("light", "switch", "fan", "cover", "curtain"):
             result = self._parse_switch_light(text, result)
         elif device_type in appliance_types:
             result = self._parse_appliance(text, result)

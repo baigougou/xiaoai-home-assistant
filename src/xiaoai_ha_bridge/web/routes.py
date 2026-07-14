@@ -200,6 +200,84 @@ async def execute_test_command(text: str = Body(..., embed=True)):
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
+@router.get("/api/commands/suggestions")
+async def get_command_suggestions():
+    """返回所有设备的语音指令建议"""
+    try:
+        config = config_manager.load()
+    except FileNotFoundError:
+        return {"devices": [], "total": 0}
+
+    type_icons = {
+        "climate": "🌡️", "vacuum": "🤖", "refrigerator": "🧊",
+        "light": "💡", "switch": "🔌", "fan": "🌀",
+        "cover": "🪟", "curtain": "🪟"
+    }
+    type_labels = {
+        "climate": "空调", "vacuum": "扫地机", "refrigerator": "冰箱",
+        "light": "灯光", "switch": "开关", "fan": "风扇",
+        "cover": "窗帘/晾衣架", "curtain": "窗帘"
+    }
+
+    def get_suggestions(cmd):
+        suggestions = []
+        name = cmd.name
+        dtype = getattr(cmd, "device_type", "climate")
+        if dtype == "climate":
+            suggestions = [
+                "打开{}".format(name),
+                "关闭{}".format(name),
+                "{}多少度".format(name),
+                "{}制冷26度".format(name),
+                "{}制热模式".format(name),
+                "{}调到24度".format(name),
+            ]
+        elif dtype == "vacuum":
+            suggestions = [
+                "{}开始全屋清扫".format(name),
+                "{}停止".format(name),
+                "{}回去充电".format(name),
+                "{}暂停".format(name),
+                "{}的状态".format(name),
+                "{}扫拖模式".format(name),
+            ]
+        elif dtype == "refrigerator":
+            suggestions = [
+                "{}多少度".format(name),
+                "{}温度".format(name),
+                "{}状态".format(name),
+                "{}门关好没".format(name),
+            ]
+        elif dtype in ("cover", "curtain"):
+            suggestions = [
+                "打开{}".format(name),
+                "关闭{}".format(name),
+                "{}状态".format(name),
+            ]
+        else:
+            suggestions = [
+                "打开{}".format(name),
+                "关闭{}".format(name),
+                "{}状态".format(name),
+            ]
+        return suggestions
+
+    devices = []
+    for cmd_id, cmd in config.commands.items():
+        dtype = getattr(cmd, "device_type", "climate")
+        devices.append({
+            "id": cmd_id,
+            "name": cmd.name,
+            "entity_id": cmd.entity_id,
+            "device_type": dtype,
+            "type_icon": type_icons.get(dtype, "📦"),
+            "type_label": type_labels.get(dtype, dtype),
+            "keywords": cmd.keywords if hasattr(cmd, "keywords") else [],
+            "suggestions": get_suggestions(cmd),
+        })
+
+    return {"devices": devices, "total": len(devices)}
+
 @router.get("/api/health")
 async def health_check():
     return {"status": "ok", "version": "0.2.3"}
