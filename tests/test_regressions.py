@@ -12,6 +12,7 @@ from xiaoai_ha_bridge.config.config import (
     TTSConfig,
     XiaomiSpeakerConfig,
 )
+from xiaoai_ha_bridge.ha_client.client import HomeAssistantClient
 from xiaoai_ha_bridge.engine.interceptor import CommandInterceptor
 from xiaoai_ha_bridge.engine import interceptor as interceptor_module
 from xiaoai_ha_bridge.web import routes
@@ -164,4 +165,22 @@ def test_poller_ignores_restart_baseline_but_handles_repeated_text():
 
     asyncio.run(poller._poll_speaker(entity_id))
     assert handled == [("turn on study ac", entity_id)]
+
+
+def test_ha_connection_preserves_http_failure_reason():
+    class FakeResponse:
+        status_code = 403
+        text = "invalid authentication"
+
+    class FakeHttpClient:
+        async def get(self, url, headers):
+            return FakeResponse()
+
+    client = HomeAssistantClient(
+        HomeAssistantConfig(url="http://ha.local:8123", api_token="token")
+    )
+    client.client = FakeHttpClient()
+
+    assert asyncio.run(client.test_connection()) is False
+    assert client.last_error == "Home Assistant 返回 HTTP 403"
 

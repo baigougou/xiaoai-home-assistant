@@ -14,6 +14,7 @@ class HomeAssistantClient:
             "Content-Type": "application/json"
         }
         self.client = httpx.AsyncClient(timeout=60.0)
+        self.last_error: Optional[str] = None
 
     async def close(self):
         await self.client.aclose()
@@ -553,12 +554,18 @@ class HomeAssistantClient:
         return related
 
     async def test_connection(self) -> bool:
+        self.last_error = None
         try:
             response = await self.client.get(
                 "{}/api/".format(self.url),
                 headers=self.headers
             )
-            return response.status_code == 200
+            if response.status_code != 200:
+                self.last_error = "Home Assistant 返回 HTTP {}".format(response.status_code)
+                logger.error("HA 连接测试失败: %s", self.last_error)
+                return False
+            return True
         except Exception as e:
+            self.last_error = "无法连接 Home Assistant: {}".format(e)
             logger.error("连接测试失败: {}".format(e))
             return False

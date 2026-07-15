@@ -134,8 +134,9 @@ async def test_ha_connection(config: Dict[str, Any] = Body(...)):
         ha_config = HomeAssistantConfig(**config)
         client = HomeAssistantClient(ha_config)
         success = await client.test_connection()
+        error = client.last_error
         await client.close()
-        return {"success": success}
+        return {"success": success, **({"error": error} if error else {})}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
