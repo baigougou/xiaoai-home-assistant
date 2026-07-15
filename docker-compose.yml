@@ -2,7 +2,6 @@ version: '3.8'
 
 services:
   xiaoai-ha:
-    image: xiaoai-ha-bridge:local
     container_name: xiaoai-ha
     restart: unless-stopped
     build:
