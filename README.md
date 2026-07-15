@@ -18,15 +18,15 @@
 
 ```bash
 docker run -d \
-  --name xiaoai-ha-bridge \
-  -p 8000:8000 \
+  --name xiaoai-ha \
+  -p 18000:8000 \
   -v /path/to/config:/app/config \
   ghcr.io/baigougou/xiaoai-home-assistant:latest
 ```
 
 ### 配置
 
-1. 访问 `http://你的NAS_IP:8000`
+1. 访问 `http://你的NAS_IP:18000`
 2. 在「连接配置」Tab 填写 HA 地址和 Token
 3. 在「设备管理」Tab 扫描并添加设备
 4. 在「指令测试」Tab 测试语音命令
