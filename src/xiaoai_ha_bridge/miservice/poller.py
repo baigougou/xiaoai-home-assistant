@@ -20,6 +20,7 @@ class SpeakerPoller:
         self.on_poll = on_poll
         self.running = False
         self.last_texts: Dict[str, str] = {}
+        self.last_observations: Dict[str, Dict[str, str]] = {}
         self.polling_interval = config.bridge.polling_interval
         self.retry_count = 0
         self.max_retries = 3
@@ -32,6 +33,9 @@ class SpeakerPoller:
         for eid in list(self.last_texts.keys()):
             if eid not in new_speaker_ids:
                 del self.last_texts[eid]
+        for eid in list(self.last_observations.keys()):
+            if eid not in new_speaker_ids:
+                del self.last_observations[eid]
 
     async def start(self):
         self.running = True
@@ -78,12 +82,17 @@ class SpeakerPoller:
           -> sensor.xiaomi_lx06_xxxx_conversation
         """
         text = ""
+        observed_state = None
+        observed_source = None
 
         # 方案1: 通过 conversation sensor 读取（xiaomi_miot 集成）
         # 尝试多种可能的 sensor 命名格式
         conv_entity_ids = self._guess_conversation_sensors(entity_id)
         for conv_entity_id in conv_entity_ids:
             conv_state = await self.ha_client.get_state(conv_entity_id, quiet=True)
+            if conv_state is not None and observed_state is None:
+                observed_state = conv_state
+                observed_source = conv_entity_id
             if conv_state and conv_state.get("state"):
                 candidate = str(conv_state["state"]).strip()
                 if candidate:
@@ -96,7 +105,10 @@ class SpeakerPoller:
         if not text:
             state = await self.ha_client.get_state(entity_id, quiet=False)
             if not state:
+                self._remember_observation(entity_id, observed_source, observed_state, text)
                 return
+            observed_state = state
+            observed_source = entity_id
             attributes = state.get("attributes", {})
             for key in ["last_text", "current_text", "text", "media_title",
                         "conversation_content", "last_command"]:
@@ -107,10 +119,10 @@ class SpeakerPoller:
                         break
 
         if not text:
+            self._remember_observation(entity_id, observed_source, observed_state, text)
             return
 
-        last_text = self.last_texts.get(entity_id, "")
-        if text == last_text:
+        if not self._remember_observation(entity_id, observed_source, observed_state, text):
             return
 
         self.last_texts[entity_id] = text
@@ -122,6 +134,35 @@ class SpeakerPoller:
                 logger.info("指令已处理: {} (来自{})".format(text, entity_id))
             else:
                 logger.debug("指令未匹配: {}".format(text))
+
+    def _remember_observation(
+        self,
+        entity_id: str,
+        source_entity_id: Optional[str],
+        state: Optional[Dict],
+        text: str,
+    ) -> bool:
+        if state is None or source_entity_id is None:
+            return False
+
+        observation = {
+            "source": source_entity_id,
+            "timestamp": str(state.get("last_updated") or state.get("last_changed") or ""),
+            "text": text,
+        }
+        previous = self.last_observations.get(entity_id)
+        self.last_observations[entity_id] = observation
+        self.last_texts[entity_id] = text
+
+        if previous is None:
+            logger.debug("[%s] 初始化语音状态基线", entity_id)
+            return False
+
+        if observation["source"] != previous["source"]:
+            return True
+        if observation["timestamp"]:
+            return observation["timestamp"] != previous["timestamp"]
+        return observation["text"] != previous["text"]
 
     def _guess_conversation_sensors(self, entity_id: str) -> list:
         """根据 media_player entity_id 猜测可能的 conversation sensor id。"""

@@ -16,6 +16,7 @@ from xiaoai_ha_bridge.engine.interceptor import CommandInterceptor
 from xiaoai_ha_bridge.engine import interceptor as interceptor_module
 from xiaoai_ha_bridge.web import routes
 from xiaoai_ha_bridge.logging.logger import setup_logging
+from xiaoai_ha_bridge.miservice.poller import SpeakerPoller
 
 
 def build_config() -> AppConfig:
@@ -124,3 +125,43 @@ def test_setup_logging_is_idempotent(tmp_path):
     for handler in list(logger.handlers):
         logger.removeHandler(handler)
         handler.close()
+
+
+def test_poller_ignores_restart_baseline_but_handles_repeated_text():
+    entity_id = "media_player.xiaomi_lx06_dd28_play_control"
+    conversation_id = "sensor.xiaomi_lx06_dd28_conversation"
+    states = [
+        {
+            "entity_id": conversation_id,
+            "state": "turn on study ac",
+            "last_updated": "2026-07-15T10:00:00+00:00",
+        },
+        {
+            "entity_id": conversation_id,
+            "state": "turn on study ac",
+            "last_updated": "2026-07-15T10:01:00+00:00",
+        },
+    ]
+
+    class PollerClient:
+        async def get_state(self, requested_entity_id, quiet=False):
+            if requested_entity_id == conversation_id:
+                return states.pop(0)
+            return None
+
+    handled = []
+
+    async def on_command(text, source_entity_id):
+        handled.append((text, source_entity_id))
+        return True
+
+    config = build_config()
+    config.xiaomi_speakers = [XiaomiSpeakerConfig(entity_id=entity_id)]
+    poller = SpeakerPoller(config, PollerClient(), on_command=on_command)
+
+    asyncio.run(poller._poll_speaker(entity_id))
+    assert handled == []
+
+    asyncio.run(poller._poll_speaker(entity_id))
+    assert handled == [("turn on study ac", entity_id)]
+
