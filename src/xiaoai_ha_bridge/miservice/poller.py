@@ -94,7 +94,7 @@ class SpeakerPoller:
                 observed_state = conv_state
                 observed_source = conv_entity_id
             if conv_state and conv_state.get("state"):
-                candidate = str(conv_state["state"]).strip()
+                candidate = self._normalize_text(conv_state["state"])
                 if candidate:
                     text = candidate
                     logger.debug("[{}] 从 conversation sensor [{}] 读取: {}".format(
@@ -113,7 +113,7 @@ class SpeakerPoller:
             for key in ["last_text", "current_text", "text", "media_title",
                         "conversation_content", "last_command"]:
                 if key in attributes and attributes[key]:
-                    text = str(attributes[key]).strip()
+                    text = self._normalize_text(attributes[key])
                     if text:
                         logger.debug("[{}] 从 media_player 属性读取: {}".format(entity_id, text))
                         break
@@ -145,6 +145,7 @@ class SpeakerPoller:
         if state is None or source_entity_id is None:
             return False
 
+        text = self._normalize_text(text)
         observation = {
             "source": source_entity_id,
             "timestamp": str(state.get("last_updated") or state.get("last_changed") or ""),
@@ -158,11 +159,24 @@ class SpeakerPoller:
             logger.debug("[%s] 初始化语音状态基线", entity_id)
             return False
 
+        if not previous["text"] and observation["text"]:
+            logger.debug("[%s] 忽略重连后的首个语音状态", entity_id)
+            return False
+        if previous["text"] and not observation["text"]:
+            return False
+
         if observation["source"] != previous["source"]:
             return True
         if observation["timestamp"]:
             return observation["timestamp"] != previous["timestamp"]
         return observation["text"] != previous["text"]
+
+    @staticmethod
+    def _normalize_text(value: object) -> str:
+        text = str(value or "").strip()
+        if text.lower() in {"unknown", "unavailable", "none", "null"}:
+            return ""
+        return text
 
     def _guess_conversation_sensors(self, entity_id: str) -> list:
         """根据 media_player entity_id 猜测可能的 conversation sensor id。"""

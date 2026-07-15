@@ -184,3 +184,34 @@ def test_ha_connection_preserves_http_failure_reason():
     assert asyncio.run(client.test_connection()) is False
     assert client.last_error == "Home Assistant 返回 HTTP 403"
 
+
+def test_poller_ignores_unavailable_and_first_text_after_reconnect():
+    entity_id = "media_player.xiaomi_lx06_dd28_play_control"
+    conversation_id = "sensor.xiaomi_lx06_dd28_conversation"
+    states = [
+        {"entity_id": conversation_id, "state": "unavailable", "last_updated": "t1"},
+        {"entity_id": conversation_id, "state": "old command", "last_updated": "t2"},
+        {"entity_id": conversation_id, "state": "new command", "last_updated": "t3"},
+    ]
+
+    class PollerClient:
+        async def get_state(self, requested_entity_id, quiet=False):
+            if requested_entity_id == conversation_id:
+                return states.pop(0)
+            return None
+
+    handled = []
+
+    async def on_command(text, source_entity_id):
+        handled.append(text)
+        return True
+
+    config = build_config()
+    config.xiaomi_speakers = [XiaomiSpeakerConfig(entity_id=entity_id)]
+    poller = SpeakerPoller(config, PollerClient(), on_command=on_command)
+
+    for _ in states.copy():
+        asyncio.run(poller._poll_speaker(entity_id))
+
+    assert handled == ["new command"]
+
